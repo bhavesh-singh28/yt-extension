@@ -9,8 +9,8 @@
   class CacheManager {
     constructor() {
       this.config = window.YTStudyFilter.CONFIG;
-      this.sessionCache = new Map(); // Fast synchronous in-memory lookup
-      this.persistentCache = {};     // Synchronized copy of chrome.storage.local
+      this.sessionCache = new Map();
+      this.persistentCache = {};
       this.settings = { ...this.config.DEFAULT_SETTINGS };
       this.stats = {
         videosAnalyzed: 0,
@@ -42,7 +42,8 @@
 
         if (data[this.config.STORAGE_KEYS.CACHE]) {
           this.persistentCache = data[this.config.STORAGE_KEYS.CACHE] || {};
-          this._pruneExpired();
+          // Prune expired or fallback error entries
+          this._pruneExpiredAndErrors();
         }
 
         if (data[this.config.STORAGE_KEYS.STATS]) {
@@ -50,6 +51,10 @@
         }
 
         this.isInitialized = true;
+        console.log(
+          '%c[YT Study Filter:Cache] ⚡ Initialized with ' + Object.keys(this.persistentCache).length + ' cached classifications',
+          'color: #6366f1; font-weight: bold;'
+        );
       } catch (err) {
         console.warn('[YTStudyFilter:Cache] Failed to load storage:', err);
         this.isInitialized = true;
@@ -57,21 +62,35 @@
     }
 
     /**
-     * Remove entries older than cacheTtlMs
+     * Remove entries older than TTL or entries cached as transient errors
      */
-    _pruneExpired() {
+    _pruneExpiredAndErrors() {
       const now = Date.now();
       const ttl = this.settings.cacheTtlMs || this.config.DEFAULT_SETTINGS.cacheTtlMs;
       let hasPruned = false;
+      let prunedErrors = 0;
 
       for (const [id, item] of Object.entries(this.persistentCache)) {
-        if (!item.timestamp || (now - item.timestamp > ttl)) {
+        const isExpired = !item.timestamp || (now - item.timestamp > ttl);
+        // Clear out any old error fallbacks so they can be freshly classified
+        const isErrorFallback = item.reason && (
+          item.reason.includes('Fallback') ||
+          item.reason.includes('error') ||
+          item.reason.includes('404') ||
+          item.reason.includes('unavailable')
+        );
+
+        if (isExpired || isErrorFallback) {
           delete this.persistentCache[id];
           hasPruned = true;
+          if (isErrorFallback) prunedErrors++;
         }
       }
 
       if (hasPruned) {
+        if (prunedErrors > 0) {
+          console.log(`%c[YT Study Filter:Cache] 🧹 Cleaned ${prunedErrors} stale error entries from cache`, 'color: #f59e0b;');
+        }
         chrome.storage.local.set({
           [this.config.STORAGE_KEYS.CACHE]: this.persistentCache
         }).catch(() => {});
@@ -97,7 +116,6 @@
         const now = Date.now();
         const ttl = this.settings.cacheTtlMs || this.config.DEFAULT_SETTINGS.cacheTtlMs;
         if (!cached.timestamp || (now - cached.timestamp <= ttl)) {
-          // Sync into session cache
           this.sessionCache.set(videoId, cached);
           return cached;
         } else {
@@ -126,7 +144,17 @@
       // Set in-memory session cache immediately
       this.sessionCache.set(videoId, record);
 
-      // Queue for debounced persistent write
+      // Do NOT persist transient server errors to long-term storage
+      const isTransientError = record.reason && (
+        record.reason.includes('Fallback') ||
+        record.reason.includes('error') ||
+        record.reason.includes('unavailable')
+      );
+
+      if (isTransientError) {
+        return;
+      }
+
       this.persistentCache[videoId] = record;
       this._pendingCacheWrites[videoId] = record;
 
@@ -160,7 +188,7 @@
           [this.config.STORAGE_KEYS.STATS]: this.stats
         });
       } catch (err) {
-        // Storage errors ignored gracefully
+        // Ignored gracefully
       }
     }
 
@@ -173,6 +201,7 @@
       this._pendingCacheWrites = {};
       try {
         await chrome.storage.local.remove([this.config.STORAGE_KEYS.CACHE]);
+        console.log('%c[YT Study Filter:Cache] 🗑️ All cache cleared!', 'color: #10b981; font-weight: bold;');
       } catch (err) {
         console.warn('[YTStudyFilter:Cache] Failed to clear storage cache:', err);
       }

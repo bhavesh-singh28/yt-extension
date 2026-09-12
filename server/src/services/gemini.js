@@ -16,64 +16,100 @@ Always evaluate the realistic user intent and content nature behind the title. I
 
 Return strict JSON only matching the requested schema.`;
 
+// Candidate models to try in order if one returns 404
+const FALLBACK_MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash'
+];
+
 /**
- * Perform direct HTTP request to Gemini API
+ * Perform direct HTTP request to Gemini API with automatic model fallback
  * @param {string} prompt - Prompt text
  * @param {string} apiKey - Gemini API Key
- * @param {string} model - Model identifier
- * @returns {Promise<string>} Raw text output
+ * @param {string} preferredModel - Model identifier
+ * @returns {Promise<{ text: string, modelUsed: string }>} Raw text output and model used
  */
-async function callGeminiApi(prompt, apiKey, model) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+async function callGeminiApi(prompt, apiKey, preferredModel) {
+  const modelsToTry = [
+    preferredModel,
+    ...FALLBACK_MODELS.filter(m => m !== preferredModel)
+  ];
 
-  const requestBody = {
-    contents: [
-      {
+  let lastError = null;
+
+  for (const model of modelsToTry) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+    const requestBody = {
+      contents: [
+        {
+          parts: [
+            { text: prompt }
+          ]
+        }
+      ],
+      systemInstruction: {
         parts: [
-          { text: prompt }
+          { text: SYSTEM_INSTRUCTION }
         ]
+      },
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.1,
+        maxOutputTokens: 2048
       }
-    ],
-    systemInstruction: {
-      parts: [
-        { text: SYSTEM_INSTRUCTION }
-      ]
-    },
-    generationConfig: {
-      responseMimeType: "application/json",
-      temperature: 0.1,
-      maxOutputTokens: 2048
+    };
+
+    try {
+      console.log(`[GeminiService] 🤖 Querying model "${model}"...`);
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        console.warn(`[GeminiService] Model "${model}" failed with HTTP ${response.status}: ${errorText.slice(0, 200)}`);
+
+        // If 404, try next fallback model
+        if (response.status === 404) {
+          lastError = new Error(`HTTP 404 for model ${model}`);
+          continue;
+        }
+
+        throw new Error(`Gemini API HTTP ${response.status}: ${errorText || response.statusText}`);
+      }
+
+      const data = await response.json();
+      const candidate = data.candidates?.[0];
+      const text = candidate?.content?.parts?.[0]?.text;
+
+      if (!text) {
+        throw new Error('Gemini API returned an empty or missing response part');
+      }
+
+      console.log(`[GeminiService] ✅ Success with model "${model}"`);
+      return { text, modelUsed: model };
+    } catch (err) {
+      lastError = err;
+      if (err.name === 'TimeoutError' || err.message.includes('404')) {
+        continue;
+      }
+      throw err;
     }
-  };
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(requestBody),
-    signal: AbortSignal.timeout(10000) // 10s timeout
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => '');
-    throw new Error(`Gemini API HTTP ${response.status}: ${errorText || response.statusText}`);
   }
 
-  const data = await response.json();
-  const candidate = data.candidates?.[0];
-  const text = candidate?.content?.parts?.[0]?.text;
-
-  if (!text) {
-    throw new Error('Gemini API returned an empty or missing response part');
-  }
-
-  return text;
+  throw lastError || new Error('All candidate models failed');
 }
 
 /**
  * Local heuristic mock classifier used when GEMINI_API_KEY is not configured
- * Allows seamless offline development and testing
  */
 function mockClassifier(title) {
   const lower = title.toLowerCase();
@@ -84,7 +120,7 @@ function mockClassifier(title) {
     'calculus', 'physics', 'chemistry', 'biology', 'math', 'algebra',
     'algorithm', 'data structure', 'leetcode', 'cs50', 'engineering',
     'system design', 'machine learning', 'deep learning', 'exam prep',
-    'history documentary', 'mit opencourseware'
+    'documentary', 'mit opencourseware'
   ];
 
   const nonEducationalKeywords = [
@@ -111,26 +147,22 @@ function mockClassifier(title) {
 
 /**
  * Classify a single video title
- * @param {string} videoId
- * @param {string} title
- * @returns {Promise<{ videoId: string, classification: 'EDUCATIONAL'|'NON_EDUCATIONAL'|'UNCERTAIN', confidence: number, reason?: string }>}
  */
 export async function classifyTitle(videoId, title) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+  const model = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').trim();
+
+  console.log(`\n[Classify:Single] 📥 Video [${videoId}]: "${title}"`);
 
   if (!apiKey || apiKey === 'your_gemini_api_key_here') {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('[GeminiService] No GEMINI_API_KEY provided. Using local mock classification.');
-      const mockResult = mockClassifier(title);
-      return {
-        videoId,
-        classification: mockResult.classification,
-        confidence: mockResult.confidence,
-        reason: `${mockResult.reason} (mock mode)`
-      };
-    }
-    throw new Error('GEMINI_API_KEY is not configured in server environment');
+    console.warn('[GeminiService] No GEMINI_API_KEY provided. Using local mock classification.');
+    const mockResult = mockClassifier(title);
+    return {
+      videoId,
+      classification: mockResult.classification,
+      confidence: mockResult.confidence,
+      reason: `${mockResult.reason} (mock mode)`
+    };
   }
 
   const prompt = `Classify this YouTube video title:
@@ -145,61 +177,58 @@ Return JSON matching:
 }`;
 
   try {
-    const rawJson = await callGeminiApi(prompt, apiKey, model);
+    const { text: rawJson, modelUsed } = await callGeminiApi(prompt, apiKey, model);
     const parsed = JSON.parse(rawJson);
 
+    const classification = normalizeClassification(parsed.classification);
+    const confidence = normalizeConfidence(parsed.confidence);
+    const reason = typeof parsed.reason === 'string' ? parsed.reason.slice(0, 200) : '';
+
+    const icon = classification === 'EDUCATIONAL' ? '🎓' : classification === 'NON_EDUCATIONAL' ? '🚫' : '❓';
+    console.log(`[Classify:Single] ${icon} Result for [${videoId}]: ${classification} (conf: ${confidence}) - ${reason} [model: ${modelUsed}]`);
+
     return {
       videoId,
-      classification: normalizeClassification(parsed.classification),
-      confidence: normalizeConfidence(parsed.confidence),
-      reason: typeof parsed.reason === 'string' ? parsed.reason.slice(0, 200) : ''
+      classification,
+      confidence,
+      reason
     };
   } catch (err) {
-    console.error(`[GeminiService] Error classifying video "${videoId}":`, err.message);
+    console.error(`[GeminiService] ❌ Error classifying video "${videoId}":`, err.message);
 
-    // Fallback gracefully without breaking
-    if (process.env.NODE_ENV !== 'production') {
-      const fallback = mockClassifier(title);
-      return {
-        videoId,
-        classification: fallback.classification,
-        confidence: fallback.confidence,
-        reason: `Fallback on error: ${err.message}`
-      };
-    }
-
+    const fallback = mockClassifier(title);
     return {
       videoId,
-      classification: 'UNCERTAIN',
-      confidence: 0.5,
-      reason: 'Classification service temporarily unavailable'
+      classification: fallback.classification,
+      confidence: fallback.confidence,
+      reason: `Fallback on error: ${err.message}`
     };
   }
 }
 
 /**
  * Classify a batch of video titles in a single Gemini API call
- * @param {Array<{ videoId: string, title: string }>} videos
- * @returns {Promise<Array<{ videoId: string, classification: string, confidence: number, reason?: string }>>}
  */
 export async function classifyBatchTitles(videos) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+  const model = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').trim();
+
+  console.log(`\n[Classify:Batch] 📥 Received batch of ${videos.length} videos to classify:`);
+  videos.forEach((v, idx) => {
+    console.log(`   ${idx + 1}. [${v.videoId}] "${v.title}"`);
+  });
 
   if (!apiKey || apiKey === 'your_gemini_api_key_here') {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('[GeminiService] No GEMINI_API_KEY provided. Using local mock classification for batch.');
-      return videos.map(v => {
-        const mockResult = mockClassifier(v.title);
-        return {
-          videoId: v.videoId,
-          classification: mockResult.classification,
-          confidence: mockResult.confidence,
-          reason: `${mockResult.reason} (mock mode)`
-        };
-      });
-    }
-    throw new Error('GEMINI_API_KEY is not configured in server environment');
+    console.warn('[GeminiService] No GEMINI_API_KEY provided. Using local mock classification for batch.');
+    return videos.map(v => {
+      const mockResult = mockClassifier(v.title);
+      return {
+        videoId: v.videoId,
+        classification: mockResult.classification,
+        confidence: mockResult.confidence,
+        reason: `${mockResult.reason} (mock mode)`
+      };
+    });
   }
 
   const prompt = `Classify each of the following YouTube video titles for a distraction-free study mode:
@@ -218,7 +247,7 @@ Return a strict JSON object with a "results" array matching this exact schema:
 }`;
 
   try {
-    const rawJson = await callGeminiApi(prompt, apiKey, model);
+    const { text: rawJson, modelUsed } = await callGeminiApi(prompt, apiKey, model);
     const parsed = JSON.parse(rawJson);
 
     if (!Array.isArray(parsed.results)) {
@@ -237,37 +266,33 @@ Return a strict JSON object with a "results" array matching this exact schema:
       }
     }
 
-    // Ensure every requested video has an entry in output order
-    return videos.map(v => {
-      if (resultMap.has(v.videoId)) {
-        return resultMap.get(v.videoId);
-      }
-      return {
-        videoId: v.videoId,
-        classification: 'UNCERTAIN',
-        confidence: 0.5,
-        reason: 'Missing from model output'
-      };
-    });
-  } catch (err) {
-    console.error('[GeminiService] Batch classification failed:', err.message);
-
-    // Fallback to local heuristic in dev or UNCERTAIN in prod
-    return videos.map(v => {
-      if (process.env.NODE_ENV !== 'production') {
-        const fallback = mockClassifier(v.title);
-        return {
+    console.log(`[Classify:Batch] 📤 Classifications returned by ${modelUsed}:`);
+    const finalResults = videos.map(v => {
+      let res = resultMap.get(v.videoId);
+      if (!res) {
+        res = {
           videoId: v.videoId,
-          classification: fallback.classification,
-          confidence: fallback.confidence,
-          reason: `Fallback batch error: ${err.message}`
+          classification: 'UNCERTAIN',
+          confidence: 0.5,
+          reason: 'Missing from model output'
         };
       }
+      const icon = res.classification === 'EDUCATIONAL' ? '🎓' : res.classification === 'NON_EDUCATIONAL' ? '🚫' : '❓';
+      console.log(`   ${icon} [${res.videoId}] ${res.classification} (${res.confidence}) - ${res.reason}`);
+      return res;
+    });
+
+    return finalResults;
+  } catch (err) {
+    console.error('[GeminiService] ❌ Batch classification failed:', err.message);
+
+    return videos.map(v => {
+      const fallback = mockClassifier(v.title);
       return {
         videoId: v.videoId,
-        classification: 'UNCERTAIN',
-        confidence: 0.5,
-        reason: 'Service unavailable'
+        classification: fallback.classification,
+        confidence: fallback.confidence,
+        reason: `Fallback batch error: ${err.message}`
       };
     });
   }

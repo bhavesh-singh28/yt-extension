@@ -6,7 +6,7 @@
 (function () {
   const { CONFIG, cache, youtube, classifier, dom } = window.YTStudyFilter;
 
-  // Track in-flight API requests by videoId -> array of card elements
+  // Track in-flight API requests by videoId -> array of { element, title }
   const pendingRequests = new Map();
 
   // Queue of { videoId, title, element } waiting for batch classification
@@ -28,24 +28,29 @@
     const cards = youtube.findAllVideoCards();
     if (cards.length === 0) return;
 
+    let newlyQueued = 0;
+    let cacheHits = 0;
+    let localHits = 0;
+
     for (const card of cards) {
       const videoData = youtube.extractVideoData(card);
-      if (!videoData) continue;
+      if (!videoData) continue; // Skeleton or unhydrated card
 
       const { videoId, title, element } = videoData;
 
       // 1. Check if classification already exists in cache
       const cached = cache.get(videoId);
       if (cached) {
-        dom.applyFilter(element, videoId, cached, currentSettings);
+        cacheHits++;
+        dom.applyFilter(element, videoId, cached, currentSettings, title);
         continue;
       }
 
       // 2. Check if this videoId is already waiting in pending requests
       if (pendingRequests.has(videoId)) {
-        const elements = pendingRequests.get(videoId);
-        if (!elements.includes(element)) {
-          elements.push(element);
+        const list = pendingRequests.get(videoId);
+        if (!list.some(item => item.element === element)) {
+          list.push({ element, title });
         }
         continue;
       }
@@ -54,6 +59,11 @@
       if (currentSettings.localClassifierEnabled) {
         const localResult = classifier.classifyLocally(title);
         if (localResult) {
+          localHits++;
+          console.log(
+            `%c[YT Study Filter:Core] 🧠 Local heuristic classified [${videoId}] "${title}" as ${localResult.classification}`,
+            'color: #38bdf8; font-weight: bold;'
+          );
           cache.set(videoId, localResult);
           cache.incrementStat('videosAnalyzed');
           if (localResult.classification === 'EDUCATIONAL') {
@@ -62,18 +72,28 @@
             cache.incrementStat('nonEducationalVideos');
           }
 
-          dom.applyFilter(element, videoId, localResult, currentSettings);
+          dom.applyFilter(element, videoId, localResult, currentSettings, title);
           continue;
         }
       }
 
       // 4. Queue for batch Gemini classification
-      pendingRequests.set(videoId, [element]);
+      newlyQueued++;
+      pendingRequests.set(videoId, [{ element, title }]);
       batchQueue.push({ videoId, title });
+
+      console.log(`%c[YT Study Filter:Core] ⏳ Queued for Gemini AI: [${videoId}] "${title}"`, 'color: #94a3b8;');
 
       // Reset batch schedule
       if (batchTimer) clearTimeout(batchTimer);
       batchTimer = setTimeout(flushBatchQueue, CONFIG.TIMINGS.BATCH_DEBOUNCE_MS);
+    }
+
+    if (newlyQueued > 0) {
+      console.log(
+        `%c[YT Study Filter:Core] 📊 DOM Scan: ${cards.length} cards | ${cacheHits} cached | ${localHits} local | ${newlyQueued} queued for AI`,
+        'color: #6366f1; font-weight: bold;'
+      );
     }
   }
 
@@ -97,6 +117,11 @@
       title
     }));
 
+    console.log(
+      `%c[YT Study Filter:Core] 📤 Sending batch request for ${itemsToClassify.length} titles to backend...`,
+      'color: #8b5cf6; font-weight: bold;'
+    );
+
     // Call backend batch endpoint
     const results = await classifier.classifyBatch(
       currentSettings.backendUrl,
@@ -105,8 +130,8 @@
 
     // Apply results to DOM elements and update cache
     for (const item of itemsToClassify) {
-      const { videoId } = item;
-      const elements = pendingRequests.get(videoId) || [];
+      const { videoId, title } = item;
+      const elementRecords = pendingRequests.get(videoId) || [];
       pendingRequests.delete(videoId);
 
       const classificationData = results.get(videoId) || {
@@ -127,8 +152,8 @@
       }
 
       // Apply filter to all associated elements
-      for (const el of elements) {
-        dom.applyFilter(el, videoId, classificationData, currentSettings);
+      for (const rec of elementRecords) {
+        dom.applyFilter(rec.element, videoId, classificationData, currentSettings, rec.title || title);
       }
     }
   }
@@ -146,48 +171,41 @@
   }
 
   /**
+   * Run scans on schedule to catch lazily loaded titles
+   */
+  function scheduleHydrationScans() {
+    [150, 450, 900, 1800, 3000].forEach(delay => {
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          processVideoCards();
+        });
+      }, delay);
+    });
+  }
+
+  /**
    * Set up MutationObserver to react to YouTube dynamic DOM updates
    */
   function setupMutationObserver() {
     const targetNode = document.querySelector('ytd-app') || document.body;
 
-    const observer = new MutationObserver((mutations) => {
-      let shouldProcess = false;
-
-      for (const mutation of mutations) {
-        if (mutation.addedNodes.length > 0) {
-          for (const node of mutation.addedNodes) {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              const tag = node.tagName ? node.tagName.toLowerCase() : '';
-              // Check if added node is a video card or container
-              if (
-                tag.startsWith('ytd-') ||
-                node.querySelector?.(CONFIG.SELECTORS.CARD_CONTAINERS.join(','))
-              ) {
-                shouldProcess = true;
-                break;
-              }
-            }
-          }
-        }
-        if (shouldProcess) break;
-      }
-
-      if (shouldProcess) {
-        scheduleScan();
-      }
+    const observer = new MutationObserver(() => {
+      scheduleScan();
     });
 
     observer.observe(targetNode, {
       childList: true,
       subtree: true
     });
+
+    console.log('%c[YT Study Filter:Core] 👁️ MutationObserver attached to YouTube DOM', 'color: #10b981;');
   }
 
   /**
    * Re-evaluates all currently processed video elements when settings change
    */
   function reevaluateProcessedCards() {
+    console.log('%c[YT Study Filter:Core] 🔄 Re-evaluating cards with updated settings:', 'color: #f59e0b;', currentSettings);
     if (!currentSettings.enabled || !currentSettings.blurEnabled) {
       dom.unblurAll();
       return;
@@ -228,12 +246,22 @@
    * Initialize extension
    */
   async function init() {
+    console.log(
+      '%c=============================================\n' +
+      '🎓 YouTube Study Filter Active!\n' +
+      'Version: 1.0.0\n' +
+      'Open DevTools to observe real-time classification logs.\n' +
+      '=============================================',
+      'color: #6366f1; font-weight: bold; font-size: 13px;'
+    );
+
     await cache.init();
     currentSettings = { ...currentSettings, ...cache.settings };
 
     // Setup YouTube SPA navigation triggers
     youtube.onNavigation(() => {
-      scheduleScan();
+      console.log('%c[YT Study Filter:Core] 🧭 SPA navigation: triggering hydration scan', 'color: #3b82f6;');
+      scheduleHydrationScans();
     });
 
     // Setup storage changes listener
@@ -242,8 +270,8 @@
     // Setup MutationObserver
     setupMutationObserver();
 
-    // Initial DOM scan
-    scheduleScan();
+    // Initial scans
+    scheduleHydrationScans();
   }
 
   // Start when DOM is ready

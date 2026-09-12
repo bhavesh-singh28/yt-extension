@@ -10,7 +10,7 @@
     constructor() {
       this.config = window.YTStudyFilter.CONFIG;
 
-      // Obvious educational patterns (non-aggressive, high confidence)
+      // Obvious educational patterns (high confidence)
       this.educationalPatterns = [
         /\b(tutorial|course|lecture|lectures|crash\s+course)\b/i,
         /\b(calculus|algebra|geometry|physics|chemistry|biology|neuroscience)\b/i,
@@ -29,7 +29,7 @@
         /\b(gameplay\s+walkthrough|fortnite\s+live|minecraft\s+smp|warzone\s+victory)\b/i,
         /\b(unboxing\s+haul|room\s+tour|what\s+i\s+eat\s+in\s+a\s+day|mukbang)\b/i,
         /\b(official\s+music\s+video|official\s+audio|lyrics\s+video|remix)\b/i,
-        /\b(i\s+spent\s+24\s+hours|i\s+survived\s+\d+\s+days|challenge)\b/i
+        /\b(i\s+spent\s+24\s+hours|i\s+survived\s+\d+\s+days|extreme\s+challenge)\b/i
       ];
     }
 
@@ -45,8 +45,8 @@
         if (pattern.test(title)) {
           return {
             classification: 'EDUCATIONAL',
-            confidence: 0.94,
-            reason: 'Matched local educational heuristic'
+            confidence: 0.95,
+            reason: 'Local educational heuristic match'
           };
         }
       }
@@ -55,18 +55,18 @@
         if (pattern.test(title)) {
           return {
             classification: 'NON_EDUCATIONAL',
-            confidence: 0.96,
-            reason: 'Matched local entertainment heuristic'
+            confidence: 0.95,
+            reason: 'Local entertainment heuristic match'
           };
         }
       }
 
-      // Ambiguous title - should be classified by Gemini API
+      // Ambiguous title - defer to Gemini API
       return null;
     }
 
     /**
-     * Classify a batch of videos via the backend Gemini API
+     * Classify a batch of videos via backend Gemini API
      * @param {string} backendUrl
      * @param {Array<{ videoId: string, title: string }>} videos
      * @returns {Promise<Map<string, { classification: string, confidence: number, reason: string }>>}
@@ -76,6 +76,7 @@
       if (!videos || videos.length === 0) return results;
 
       const url = `${backendUrl.replace(/\/+$/, '')}/api/classify-batch`;
+      console.log(`%c[YT Study Filter:Classifier] 🚀 Calling backend ${url} for ${videos.length} videos...`, 'color: #8b5cf6; font-weight: bold;');
 
       try {
         const response = await fetch(url, {
@@ -88,7 +89,8 @@
         });
 
         if (!response.ok) {
-          console.warn(`[YTStudyFilter:Classifier] Backend responded with HTTP ${response.status}`);
+          const errText = await response.text().catch(() => '');
+          console.warn(`%c[YT Study Filter:Classifier] ⚠️ Backend HTTP ${response.status}: ${errText}`, 'color: #f59e0b;');
           return results;
         }
 
@@ -103,10 +105,10 @@
               });
             }
           }
+          console.log(`%c[YT Study Filter:Classifier] ✅ Received ${results.size} classifications from backend`, 'color: #10b981; font-weight: bold;');
         }
       } catch (err) {
-        // Fail-open: network error, server offline or timeout
-        console.warn('[YTStudyFilter:Classifier] Backend request failed (failing open):', err.message);
+        console.warn(`%c[YT Study Filter:Classifier] ❌ Backend request failed: ${err.message} (Failing open)`, 'color: #ef4444;');
       }
 
       return results;
@@ -114,10 +116,6 @@
 
     /**
      * Classify a single video title via backend
-     * @param {string} backendUrl
-     * @param {string} videoId
-     * @param {string} title
-     * @returns {Promise<{ classification: string, confidence: number, reason: string } | null>}
      */
     async classifySingle(backendUrl, videoId, title) {
       const url = `${backendUrl.replace(/\/+$/, '')}/api/classify`;

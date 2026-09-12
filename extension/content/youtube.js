@@ -40,7 +40,7 @@
           return liveMatch[1];
         }
       } catch (err) {
-        // Not a standard parseable URL, fallback to regex
+        // Fallback regex
         const regexMatch = href.match(/[?&]v=([a-zA-Z0-9_-]{8,15})|\/shorts\/([a-zA-Z0-9_-]{8,15})/);
         if (regexMatch) {
           return regexMatch[1] || regexMatch[2];
@@ -69,7 +69,7 @@
         }
       }
 
-      // If card itself is an anchor (e.g. some compact layouts)
+      // If card itself is an anchor
       if (!videoId && element.tagName === 'A' && element.href) {
         videoId = this.extractVideoIdFromUrl(element.href);
       }
@@ -82,7 +82,7 @@
       for (const selector of this.config.SELECTORS.TITLE_ELEMENTS) {
         const titleEl = element.querySelector(selector);
         if (titleEl) {
-          // Check title attribute first (often contains full untruncated text)
+          // Check title attribute first
           const attrTitle = titleEl.getAttribute('title') || titleEl.getAttribute('aria-label');
           if (attrTitle && attrTitle.trim().length > 0) {
             title = attrTitle.trim();
@@ -98,9 +98,24 @@
         }
       }
 
-      // Clean up common YouTube title suffixes or extra spaces
+      // 3. Fallback to thumbnail link's aria-label or title if title element had not loaded text yet
+      if (!title) {
+        const thumbLink = element.querySelector('a#thumbnail[aria-label], a#thumbnail[title]');
+        if (thumbLink) {
+          const rawAria = thumbLink.getAttribute('aria-label') || thumbLink.getAttribute('title') || '';
+          // YouTube often formats aria-label as: "Video Title by Channel Name 2 hours ago 10 minutes 1,234 views"
+          // Extract the portion before "by "
+          if (rawAria) {
+            const byIndex = rawAria.indexOf(' by ');
+            title = (byIndex > 0 ? rawAria.slice(0, byIndex) : rawAria).trim();
+          }
+        }
+      }
+
+      // Clean up whitespace
       title = title.replace(/\s+/g, ' ').trim();
 
+      // If still empty, the card is likely still an unhydrated skeleton
       if (!title) return null;
 
       return {
@@ -119,7 +134,21 @@
       const selector = this.config.SELECTORS.CARD_CONTAINERS.join(',');
       try {
         const nodeList = root.querySelectorAll(selector);
-        return Array.from(nodeList);
+        const cards = Array.from(nodeList);
+
+        // Filter out nested duplicates (e.g. if both ytd-rich-item-renderer and ytd-rich-grid-media matched)
+        const filtered = cards.filter(card => {
+          // If card is ytd-rich-grid-media and has a parent ytd-rich-item-renderer in the set, exclude media
+          if (card.tagName.toLowerCase() === 'ytd-rich-grid-media') {
+            const parentRenderer = card.closest('ytd-rich-item-renderer');
+            if (parentRenderer && cards.includes(parentRenderer)) {
+              return false;
+            }
+          }
+          return true;
+        });
+
+        return filtered;
       } catch (err) {
         console.warn('[YTStudyFilter:YouTube] Selector query failed:', err);
         return [];
@@ -152,7 +181,8 @@
       ];
 
       events.forEach(eventName => {
-        window.addEventListener(eventName, () => {
+        window.addEventListener(eventName, (e) => {
+          console.log(`%c[YT Study Filter:Nav] 🧭 Event "${eventName}" detected: ${window.location.href}`, 'color: #3b82f6;');
           callback();
         }, { passive: true });
       });

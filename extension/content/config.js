@@ -10,11 +10,12 @@
     SELECTORS: {
       // Containers representing individual video items across different pages
       CARD_CONTAINERS: [
-        'ytd-rich-item-renderer',      // Home feed
+        'ytd-rich-item-renderer',      // Home feed grid items
         'ytd-video-renderer',          // Search results
         'ytd-compact-video-renderer',  // Watch page sidebar / recommended
         'ytd-grid-video-renderer',     // Channel videos tab / grid
-        'ytd-reel-item-renderer'       // Shorts shelf item
+        'ytd-reel-item-renderer',      // Shorts shelf item
+        'ytd-rich-grid-media'          // Modern nested home feed media
       ],
 
       // Selectors to find the title element inside a card
@@ -22,15 +23,19 @@
         '#video-title',
         '#video-title-link',
         'a#video-title-link yt-formatted-string',
+        'a#video-title yt-formatted-string',
         'h3 a',
         '#title',
-        'yt-formatted-string.ytd-video-renderer'
+        'yt-formatted-string.ytd-video-renderer',
+        'yt-formatted-string#video-title',
+        'span#video-title'
       ],
 
       // Selectors to find video link inside a card (for videoId extraction)
       VIDEO_LINKS: [
         'a#thumbnail',
         'a#video-title-link',
+        'a#video-title',
         'a[href*="/watch?v="]',
         'a[href*="/shorts/"]'
       ],
@@ -39,7 +44,9 @@
       THUMBNAIL_CONTAINERS: [
         'ytd-thumbnail',
         '#thumbnail',
-        '.ytd-thumbnail'
+        'a#thumbnail',
+        '.ytd-thumbnail',
+        'div#thumbnail'
       ]
     },
 
@@ -63,7 +70,7 @@
 
     // Batching and debounce timings
     TIMINGS: {
-      MUTATION_DEBOUNCE_MS: 180,
+      MUTATION_DEBOUNCE_MS: 150,
       BATCH_DEBOUNCE_MS: 200,
       API_TIMEOUT_MS: 8000
     },

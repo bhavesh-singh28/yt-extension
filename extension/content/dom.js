@@ -9,7 +9,6 @@
   class DOMManager {
     constructor() {
       this.config = window.YTStudyFilter.CONFIG;
-      // Tracks videos revealed by the user during this session
       this.revealedSessionIds = new Set();
     }
 
@@ -23,7 +22,6 @@
     shouldBlur(classification, confidence, strictnessMode = 'balanced') {
       if (classification === 'NON_EDUCATIONAL') {
         if (strictnessMode === 'relaxed') {
-          // In relaxed mode, only blur with strong confidence
           return confidence >= 0.75;
         }
         return true;
@@ -44,11 +42,11 @@
      * @param {string} videoId
      * @param {{ classification: string, confidence: number, reason?: string }} classificationData
      * @param {object} settings
+     * @param {string} [title=""]
      */
-    applyFilter(cardElement, videoId, classificationData, settings) {
+    applyFilter(cardElement, videoId, classificationData, settings, title = '') {
       if (!cardElement || !videoId) return;
 
-      // Mark element as processed by the study filter
       cardElement.classList.add(this.config.CLASSES.PROCESSED);
       cardElement.dataset.ytStudyFilterVideoId = videoId;
       cardElement.dataset.ytStudyFilterClassification = classificationData.classification;
@@ -72,8 +70,16 @@
       );
 
       if (mustBlur) {
+        console.log(
+          `%c[YT Study Filter:DOM] 🔒 BLURRED: [${videoId}] "${title || 'video'}" (${classificationData.classification}, conf: ${classificationData.confidence})`,
+          'color: #f43f5e; font-weight: bold;'
+        );
         this.blurCard(cardElement, videoId, settings);
       } else {
+        console.log(
+          `%c[YT Study Filter:DOM] 🎓 UNBLURRED: [${videoId}] "${title || 'video'}" (${classificationData.classification})`,
+          'color: #10b981;'
+        );
         this.removeBlur(cardElement);
       }
     }
@@ -88,14 +94,16 @@
       cardElement.classList.add(this.config.CLASSES.BLURRED);
 
       if (!settings.revealEnabled) {
-        // If reveal overlay is disabled in settings, just blur
         const existingOverlay = cardElement.querySelector(`.${this.config.CLASSES.OVERLAY}`);
         if (existingOverlay) existingOverlay.remove();
         return;
       }
 
-      // Find suitable container for overlay (thumbnail container preferred to keep video layout)
-      const thumbContainer = window.YTStudyFilter.youtube.findThumbnailContainer(cardElement) || cardElement;
+      // Locate thumbnail container
+      let thumbContainer = window.YTStudyFilter.youtube.findThumbnailContainer(cardElement);
+      if (!thumbContainer) {
+        thumbContainer = cardElement.querySelector('ytd-thumbnail, #thumbnail, a#thumbnail, .ytd-thumbnail') || cardElement;
+      }
 
       // Ensure container has relative positioning so overlay covers it cleanly
       const computedPos = window.getComputedStyle(thumbContainer).position;
@@ -141,25 +149,23 @@
       showBtn.textContent = 'Show';
       showBtn.setAttribute('title', 'Reveal video for this session');
 
-      // Click listener with event stop to prevent navigating to YouTube video
+      // Click listener on Show button
       showBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        // Mark as revealed for session
+        console.log(`%c[YT Study Filter:DOM] 🔓 User revealed video [${videoId}] for session`, 'color: #f59e0b; font-weight: bold;');
         this.revealedSessionIds.add(videoId);
-
-        // Remove blur and hide overlay
         this.removeBlur(cardElement);
 
-        // Record statistic in cache manager
         if (window.YTStudyFilter.cache) {
           window.YTStudyFilter.cache.incrementStat('manuallyRevealedVideos');
         }
       });
 
-      // Prevent entire overlay from triggering YouTube player click
+      // Prevent entire overlay from triggering YouTube player navigation
       overlay.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
       });
 
@@ -185,10 +191,11 @@
     }
 
     /**
-     * Unblur all processed cards currently in the DOM (e.g. when disabled via popup)
+     * Unblur all processed cards currently in the DOM
      */
     unblurAll() {
       const blurred = document.querySelectorAll(`.${this.config.CLASSES.BLURRED}`);
+      console.log(`%c[YT Study Filter:DOM] 👁️ Unblurring all ${blurred.length} cards`, 'color: #94a3b8;');
       blurred.forEach(card => this.removeBlur(card));
     }
   }
