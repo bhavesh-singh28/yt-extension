@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://bhavesh-singh28.github.io/yt-extension/sitemap.xml

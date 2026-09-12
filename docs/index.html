@@ -3,9 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Study Filter — Focus on Learning with Gemini AI</title>
-  <meta name="description" content="A distraction-free YouTube study environment powered by Google Gemini AI. Automatically blurs non-educational videos using on-device Gemini Nano or direct Gemini API.">
-  <link rel="icon" type="image/png" href="icons/icon-48.png">
+  
+  <!-- Primary SEO Meta Tags -->
+  <title>YouTube Study Filter — Blur Distractions with Gemini AI</title>
+  <meta name="title" content="YouTube Study Filter — Blur Distractions with Gemini AI">
+  <meta name="description" content="Free Chrome extension powered by Google Gemini AI. Automatically blurs distracting YouTube videos using on-device Gemini Nano or Direct Gemini API. Study with zero distractions.">
+  <meta name="keywords" content="YouTube study filter, Gemini AI chrome extension, YouTube distraction blocker, blur YouTube feed, Gemini Nano extension, YouTube focus mode, educational YouTube extension, YouTube study mode, block non educational YouTube">
+  <meta name="author" content="Bhavesh Singh">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <link rel="canonical" href="https://bhavesh-singh28.github.io/yt-extension/">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://bhavesh-singh28.github.io/yt-extension/">
+  <meta property="og:title" content="YouTube Study Filter — Blur Distractions with Gemini AI">
+  <meta property="og:description" content="Free Chrome extension powered by Google Gemini AI. Automatically blurs distracting YouTube videos using on-device Gemini Nano or Direct Gemini API. Study with zero distractions.">
+  <meta property="og:image" content="https://bhavesh-singh28.github.io/yt-extension/icons/icon-128.png">
+  <meta property="og:site_name" content="YouTube Study Filter">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:url" content="https://bhavesh-singh28.github.io/yt-extension/">
+  <meta name="twitter:title" content="YouTube Study Filter — Blur Distractions with Gemini AI">
+  <meta name="twitter:description" content="Free Chrome extension powered by Google Gemini AI. Automatically blurs distracting YouTube videos for distraction-free studying.">
+  <meta name="twitter:image" content="https://bhavesh-singh28.github.io/yt-extension/icons/icon-128.png">
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" sizes="48x48" href="icons/icon-48.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+  <link rel="apple-touch-icon" href="icons/icon-128.png">
   
   <!-- Modern Typography: Outfit & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,6 +40,83 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="style.css">
+
+  <!-- Structured Data: SoftwareApplication Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "YouTube Study Filter",
+    "operatingSystem": "ChromeOS, Windows, macOS, Linux",
+    "applicationCategory": "BrowserExtension",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "description": "A distraction-free YouTube study environment that uses Google Gemini AI to analyze video titles and automatically blur non-educational content in real time.",
+    "url": "https://bhavesh-singh28.github.io/yt-extension/",
+    "image": "https://bhavesh-singh28.github.io/yt-extension/icons/icon-128.png",
+    "featureList": [
+      "On-device Gemini Nano local AI execution",
+      "Direct Google AI Studio API integration",
+      "Real-time title analysis without downloading video thumbnails",
+      "Instant session reveal button",
+      "Three customizable strictness modes",
+      "100% serverless and privacy focused"
+    ]
+  }
+  </script>
+
+  <!-- Structured Data: FAQPage Schema for Google Rich Snippets -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is YouTube Study Filter?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "YouTube Study Filter is a free Chrome extension that uses Google Gemini AI to analyze YouTube video titles in real-time and automatically blur non-educational videos (entertainment, gaming, vlogs, memes, clickbait) so you can focus on studying and learning."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I get a free Google Gemini API key?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "You can generate a 100% free Gemini API key by visiting Google AI Studio at aistudio.google.com/app/apikey, signing in with your Google account, and clicking 'Create API key'. Paste it into the YouTube Study Filter extension popup to start filtering."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I use YouTube Study Filter completely offline without an API key?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes! By selecting Chrome Built-in AI (Gemini Nano), the extension runs on-device using Chrome's native Prompt API. It requires zero network calls, zero API keys, zero servers, and is 100% private."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does YouTube Study Filter track my personal watch history?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. The extension operates in title-only mode. It only inspects public video title strings visible on your screen. It never tracks, downloads, or shares your watch history, user account, comments, or cookies."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What browsers are supported by YouTube Study Filter?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "YouTube Study Filter supports Google Chrome, Brave, Microsoft Edge, and any modern Chromium-based browser supporting Manifest V3 extensions."
+        }
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
   <!-- Ambient Glow Backgrounds -->
@@ -22,44 +126,45 @@
   <!-- Navigation Bar -->
   <nav class="navbar" id="navbar">
     <div class="nav-container">
-      <a href="#" class="nav-brand">
+      <a href="#" class="nav-brand" id="nav-brand-link">
         <img src="icons/icon-48.png" alt="YouTube Study Filter Logo" class="brand-logo" width="32" height="32">
         <span class="brand-text">YouTube <span class="brand-gradient">Study Filter</span></span>
       </a>
 
       <div class="nav-links">
-        <a href="#about" class="nav-link">About</a>
-        <a href="#features" class="nav-link">Features</a>
-        <a href="#setup-guide" class="nav-link">Setup & API Key</a>
-        <a href="#privacy" class="nav-link">Privacy Policy</a>
+        <a href="#about" class="nav-link" id="nav-link-about">About</a>
+        <a href="#features" class="nav-link" id="nav-link-features">Features</a>
+        <a href="#setup-guide" class="nav-link" id="nav-link-guide">Setup & API Key</a>
+        <a href="#faq" class="nav-link" id="nav-link-faq">FAQ</a>
+        <a href="#privacy" class="nav-link" id="nav-link-privacy">Privacy Policy</a>
       </div>
 
       <div class="nav-actions">
-        <a href="https://github.com/bhavesh-singh28/yt-extension" target="_blank" class="btn btn-secondary btn-sm" id="btn-github-nav">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+        <a href="#setup-guide" class="btn btn-primary btn-sm" id="btn-install-nav">
+          <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
           </svg>
-          GitHub
+          Get Extension
         </a>
       </div>
     </div>
   </nav>
 
-  <main>
+  <main id="main-content">
     <!-- Hero Section -->
     <header class="hero-section" id="hero">
       <div class="container hero-container">
-        <div class="hero-badge">
+        <div class="hero-badge" id="hero-badge">
           <span class="badge-dot"></span>
           <span>Manifest V3 • 100% Serverless & Private</span>
         </div>
 
-        <h1 class="hero-title">
+        <h1 class="hero-title" id="hero-title">
           Transform YouTube into your <br>
           <span class="gradient-text">Focused Study Space</span>
         </h1>
 
-        <p class="hero-subtitle">
+        <p class="hero-subtitle" id="hero-subtitle">
           Eliminate distractions effortlessly. Using Google Gemini AI, YouTube Study Filter analyzes video titles in real time to automatically blur entertainment, clickbait, and gaming while keeping your educational feed crystal clear.
         </p>
 
@@ -188,7 +293,7 @@
           <p class="section-desc">YouTube is one of humanity's greatest learning libraries — but its algorithm is engineered for watch time, not your exams or career growth.</p>
         </div>
 
-        <div class="grid-3">
+        <div class="grid-3" id="features">
           <div class="feature-card">
             <div class="feature-icon icon-brain">🧠</div>
             <h3>Dual AI Engine</h3>
@@ -243,7 +348,7 @@
                 <h3>Get Your Free Google AI Studio Key</h3>
                 <p>Google provides a generous <strong>100% free tier</strong> for developers and individuals with 15 requests per minute, which is more than enough for everyday study sessions.</p>
                 <div class="step-action">
-                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" id="link-ai-studio">
                     Open Google AI Studio ↗
                   </a>
                 </div>
@@ -318,6 +423,49 @@
       </div>
     </section>
 
+    <!-- FAQ Section (SEO Boost for Search Snippets) -->
+    <section class="section faq-section" id="faq">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-tag">FREQUENTLY ASKED QUESTIONS</span>
+          <h2 class="section-title">Everything You Need to Know</h2>
+          <p class="section-desc">Got questions? Find answers on how YouTube Study Filter works, its privacy protections, and AI engines.</p>
+        </div>
+
+        <div class="faq-grid">
+          <div class="faq-item">
+            <h3>How does YouTube Study Filter decide what to blur?</h3>
+            <p>The extension evaluates the public video title text against educational criteria. Content such as coding tutorials, math lectures, science demonstrations, and courses are kept visible. Entertainment, gaming, vlogs, reactions, and drama are blurred.</p>
+          </div>
+
+          <div class="faq-item">
+            <h3>Is YouTube Study Filter completely free?</h3>
+            <p>Yes, 100% free! You can use on-device Gemini Nano with zero costs or use Google AI Studio's free tier (15 requests per minute), which is more than enough for regular YouTube studying.</p>
+          </div>
+
+          <div class="faq-item">
+            <h3>Does the extension track my YouTube watch history?</h3>
+            <p>Never. The extension runs in title-only mode. It never touches your user profile, search queries, watch history, subscriptions, or comments. Your browsing activity stays completely private.</p>
+          </div>
+
+          <div class="faq-item">
+            <h3>Can I temporarily unblur a video if I want to watch it?</h3>
+            <p>Yes! Every blurred card has a glassmorphic <strong>"Show"</strong> button. Clicking it unblurs that specific video for your current session without modifying its persistent filter classification.</p>
+          </div>
+
+          <div class="faq-item">
+            <h3>Which browsers are compatible?</h3>
+            <p>Any modern Chromium browser that supports Manifest V3, including Google Chrome, Brave, and Microsoft Edge.</p>
+          </div>
+
+          <div class="faq-item">
+            <h3>How is this different from generic YouTube blockers?</h3>
+            <p>Generic blockers hide everything or block the whole site. YouTube Study Filter is intelligent: it keeps educational lectures and skills tutorials visible while filtering out time-wasting distractions in real time.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Official Privacy Policy -->
     <section class="section privacy-section" id="privacy">
       <div class="container">
@@ -337,17 +485,17 @@
             <h3>2. AI Execution Modes</h3>
             <ul>
               <li><strong>On-Device Gemini Nano:</strong> Video title strings are sent directly to Chrome's local `window.ai` Prompt API session. All computation runs 100% locally on your computer. Zero data leaves your machine.</li>
-              <li><strong>Direct Gemini API:</strong> If you provide your personal Google AI Studio API key, video titles are sent directly to Google's official Generative Language endpoints (`https://generativelanguage.googleapis.com`) using TLS encryption. No intermediate servers, proxies, or logging servers are used.</li>
+              <li><strong>Direct Gemini API:</strong> If you choose to enter your Google AI Studio API key, video titles are sent directly to Google's official Generative Language endpoints (<code>https://generativelanguage.googleapis.com</code>) using TLS encryption. No intermediate servers, proxies, or logging servers are used.</li>
             </ul>
 
             <h3>3. Local Browser Storage</h3>
-            <p>The Extension uses `chrome.storage.local` strictly on your device to store user preferences (e.g. strictness level, blur toggle, preferred AI engine) and cached classifications. This data remains on your device and is never shared.</p>
+            <p>The Extension uses <code>chrome.storage.local</code> strictly on your device to store user preferences (e.g. strictness level, blur toggle, preferred AI engine) and cached classifications. This data remains on your device and is never shared.</p>
 
             <h3>4. No Tracking & No Third-Party Sales</h3>
             <p>We do NOT track your browsing across the web, use analytics beacons, sell data to third parties or brokers, or serve advertisements.</p>
 
             <h3>5. Contact</h3>
-            <p>For questions, support, or bug reports, please submit an issue on our official <a href="https://github.com/bhavesh-singh28/yt-extension/issues" target="_blank" rel="noopener noreferrer">GitHub repository</a>.</p>
+            <p>For questions, support, or privacy inquiries, contact the developer at <code>bhaveshsingh2804@gmail.com</code>.</p>
           </div>
         </div>
       </div>
@@ -355,17 +503,18 @@
   </main>
 
   <!-- Footer -->
-  <footer class="footer">
+  <footer class="footer" id="footer">
     <div class="container footer-container">
       <div class="footer-left">
         <img src="icons/icon-48.png" alt="Logo" width="24" height="24">
-        <span>YouTube Study Filter • Open Source (MIT License)</span>
+        <span>YouTube Study Filter • Open Source Study Tool</span>
       </div>
       <div class="footer-links">
         <a href="#hero">Back to top</a>
+        <a href="#features">Features</a>
         <a href="#setup-guide">API Key Guide</a>
+        <a href="#faq">FAQ</a>
         <a href="#privacy">Privacy Policy</a>
-        <a href="https://github.com/bhavesh-singh28/yt-extension" target="_blank" rel="noopener noreferrer">GitHub Repo</a>
       </div>
     </div>
   </footer>
