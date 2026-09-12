@@ -1,0 +1,77 @@
+name: Deploy to AWS Lambda
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'server/**'
+      - '.github/workflows/deploy-lambda.yml'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  deploy:
+    name: Build, Test & Deploy to AWS Lambda
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Package Lambda Function
+        run: |
+          # Install only production dependencies for deployment package
+          rm -rf node_modules
+          npm ci --omit=dev
+          
+          # Create zip containing lambda.js, src, package.json, and node_modules
+          zip -q -r function.zip lambda.js src package.json node_modules
+          echo "Deployment package function.zip created ($(du -h function.zip | cut -f1))"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Deploy Code to AWS Lambda
+        run: |
+          FUNCTION_NAME="${{ secrets.AWS_LAMBDA_FUNCTION_NAME || 'youtube-study-filter' }}"
+          echo "Deploying to Lambda Function: $FUNCTION_NAME in region ${{ secrets.AWS_REGION || 'us-east-1' }}..."
+          
+          aws lambda update-function-code \
+            --function-name "$FUNCTION_NAME" \
+            --zip-file fileb://function.zip
+
+          echo "Waiting for Lambda function update to complete..."
+          aws lambda wait function-updated --function-name "$FUNCTION_NAME"
+
+      - name: Update Lambda Environment Variables
+        if: env.GEMINI_KEY != ''
+        env:
+          GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          FUNCTION_NAME="${{ secrets.AWS_LAMBDA_FUNCTION_NAME || 'youtube-study-filter' }}"
+          echo "Updating environment variables on $FUNCTION_NAME..."
+          
+          aws lambda update-function-configuration \
+            --function-name "$FUNCTION_NAME" \
+            --environment "Variables={GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},GEMINI_MODEL=${{ secrets.GEMINI_MODEL || 'gemini-3.5-flash-lite' }},NODE_ENV=production,ALLOWED_ORIGINS='*'}"
+
+          aws lambda wait function-updated --function-name "$FUNCTION_NAME"
+          echo "Deployment successfully finished!"
