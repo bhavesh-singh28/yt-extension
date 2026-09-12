@@ -51,7 +51,7 @@ Extract Title & Video ID
 
 1. Clone or download this repository:
    ```bash
-   git clone https://github.com/<your-username>/yt-chrome.git
+   git clone https://github.com/bhavesh-singh28/yt-extension.git
    cd yt-chrome
    ```
 2. Open Google Chrome and go to `chrome://extensions`.
@@ -63,17 +63,6 @@ Extract Title & Video ID
 
 ---
 
-## 📦 Packaging for the Chrome Web Store
-
-To create the release ZIP for the Chrome Web Store:
-
-```bash
-cd extension && zip -r ../yt-study-filter-v1.0.0.zip . -x "*.DS_Store"
-```
-
-For complete submission instructions, copy-paste store listing metadata, and privacy disclosures, see [CHROMEWEBSTORE.md](CHROMEWEBSTORE.md).
-
----
 
 ## 📂 Project Structure
 
