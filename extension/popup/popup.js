@@ -206,9 +206,39 @@ for (const radio of strictnessRadios) {
 
 btnClearCache.addEventListener('click', async () => {
   try {
+    // 1. Clear persistent video classification cache
     await chrome.storage.local.remove([STORAGE_KEYS.CACHE]);
-    showFeedback('Cache cleared successfully!');
+
+    // 2. Reset analysis statistics to zero in storage
+    const zeroStats = {
+      videosAnalyzed: 0,
+      educationalVideos: 0,
+      nonEducationalVideos: 0,
+      manuallyRevealedVideos: 0
+    };
+    await chrome.storage.local.set({
+      [STORAGE_KEYS.STATS]: zeroStats
+    });
+
+    // 3. Immediately update dashboard numbers in the popup UI to 0
+    statAnalyzed.textContent = '0';
+    statEducational.textContent = '0';
+    statFiltered.textContent = '0';
+    statRevealed.textContent = '0';
+
+    // 4. Notify open YouTube tabs to clear their in-memory session caches and stats
+    try {
+      const tabs = await chrome.tabs.query({ url: '*://*.youtube.com/*' });
+      for (const tab of tabs) {
+        chrome.tabs.sendMessage(tab.id, { action: 'CLEAR_CACHE_AND_STATS' }).catch(() => {});
+      }
+    } catch (_) {
+      // Ignored if no tabs open
+    }
+
+    showFeedback('Cache & Dashboard stats reset to 0!');
   } catch (err) {
+    console.error('Failed to clear cache and stats:', err);
     showFeedback('Failed to clear cache');
   }
 });

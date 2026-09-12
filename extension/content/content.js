@@ -223,20 +223,51 @@
   }
 
   /**
-   * Listen for settings updates from popup via chrome.storage
+   * Listen for settings, cache, and stats updates from popup via chrome.storage and runtime messages
    */
   function setupStorageListener() {
     chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName === 'local' && changes[CONFIG.STORAGE_KEYS.SETTINGS]) {
-        const newSettings = changes[CONFIG.STORAGE_KEYS.SETTINGS].newValue;
-        if (newSettings) {
-          currentSettings = { ...currentSettings, ...newSettings };
-          cache.settings = currentSettings;
-          reevaluateProcessedCards();
-          if (currentSettings.enabled) {
-            scheduleScan();
+      if (areaName === 'local') {
+        // Settings changed
+        if (changes[CONFIG.STORAGE_KEYS.SETTINGS]) {
+          const newSettings = changes[CONFIG.STORAGE_KEYS.SETTINGS].newValue;
+          if (newSettings) {
+            currentSettings = { ...currentSettings, ...newSettings };
+            cache.settings = currentSettings;
+            reevaluateProcessedCards();
+            if (currentSettings.enabled) {
+              scheduleScan();
+            }
           }
         }
+
+        // Cache was cleared from popup
+        if (changes[CONFIG.STORAGE_KEYS.CACHE] && !changes[CONFIG.STORAGE_KEYS.CACHE].newValue) {
+          cache.sessionCache.clear();
+          cache.persistentCache = {};
+          console.log('%c[YT Study Filter:Core] 🧹 In-memory session cache cleared', 'color: #10b981;');
+        }
+
+        // Stats were reset to zero from popup
+        if (changes[CONFIG.STORAGE_KEYS.STATS] && changes[CONFIG.STORAGE_KEYS.STATS].newValue) {
+          cache.stats = { ...changes[CONFIG.STORAGE_KEYS.STATS].newValue };
+        }
+      }
+    });
+
+    // Listen for direct broadcast to clear caches and re-evaluate
+    chrome.runtime.onMessage.addListener((msg) => {
+      if (msg && msg.action === 'CLEAR_CACHE_AND_STATS') {
+        cache.sessionCache.clear();
+        cache.persistentCache = {};
+        cache.stats = {
+          videosAnalyzed: 0,
+          educationalVideos: 0,
+          nonEducationalVideos: 0,
+          manuallyRevealedVideos: 0
+        };
+        console.log('%c[YT Study Filter:Core] 🧹 State cleared and re-scanning YouTube cards', 'color: #10b981;');
+        scheduleScan();
       }
     });
   }
