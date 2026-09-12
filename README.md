@@ -228,13 +228,59 @@ The backend requests structured JSON outputs (`application/json`) from Gemini wi
 
 * **No Hardcoded Keys**: The Gemini API key is stored strictly on your backend server (`.env`) and is never embedded in the extension manifest or client scripts.
 * **Privacy by Design**: Only video IDs and video titles are processed. User watch history, account details, comments, and cookies are never accessed or sent to the backend.
-* **No Image Transmission**: Thumbnails and video frames are never transmitted to Gemini or the server.
+---
+
+## ☁️ Deployment Guide (Render & AWS Lambda)
+
+You can easily deploy this backend to the cloud so you don't need to run it locally on your machine.
+
+### Option A: Deploy to Render (Recommended - Free & Easiest)
+
+Render provides free Node.js hosting with automatic HTTPS.
+
+1. Push this repository to GitHub or GitLab.
+2. Go to [Render Dashboard](https://dashboard.render.com/) and click **New → Web Service**.
+3. Connect your repository.
+4. Set the following options:
+   * **Root Directory**: `server`
+   * **Runtime**: `Node`
+   * **Build Command**: `npm install`
+   * **Start Command**: `npm start`
+5. Under **Environment Variables**, add:
+   * `GEMINI_API_KEY`: Your Gemini API Key from Google AI Studio.
+   * `GEMINI_MODEL`: `gemini-3.5-flash-lite`
+   * `NODE_ENV`: `production`
+   * `ALLOWED_ORIGINS`: `*`
+6. Click **Create Web Service**.
+7. Once deployed, Render will provide a public URL like:
+   ```text
+   https://youtube-study-filter.onrender.com
+   ```
+8. **Connect Extension**: Click the extension icon in Chrome, paste your Render URL into the **Backend API URL** field, and click **Save**!
 
 ---
 
-## 🔮 Future Improvements
+### Option B: Deploy to AWS Lambda (Serverless)
 
-* Whitelist/Blacklist channels (e.g., always allow videos from *freeCodeCamp* or *3Blue1Brown*).
-* Custom study subjects (e.g. focus exclusively on "Mathematics" or "Medical Studies").
-* Customizable blur intensity and custom overlay badges.
-* Cloud deployment guide for deploying the backend to Cloud Run / Render / AWS.
+We included a zero-dependency native AWS Lambda handler (`server/lambda.js`) that works with **AWS Lambda Function URLs** or **Amazon API Gateway**.
+
+1. **Package the server**:
+   ```bash
+   cd server
+   npm ci --omit=dev
+   zip -r function.zip lambda.js src package.json
+   ```
+2. **Create Lambda Function in AWS Console**:
+   * **Function Name**: `youtube-study-filter`
+   * **Runtime**: `Node.js 20.x`
+   * **Handler**: `lambda.handler`
+3. **Upload Zip**: Upload `function.zip` under **Code source**.
+4. **Environment Variables** (under *Configuration → Environment variables*):
+   * `GEMINI_API_KEY`: Your Gemini API Key.
+   * `GEMINI_MODEL`: `gemini-3.5-flash-lite`
+5. **Enable Function URL** (easiest):
+   * Go to *Configuration → Function URL* → Click **Create function URL**.
+   * Auth type: `NONE`.
+   * Configure CORS: Allow Origin `*`, Methods `GET, POST, OPTIONS`, Headers `*`.
+6. Copy the generated Function URL (e.g. `https://xyz.lambda-url.us-east-1.on.aws`).
+7. Paste this URL into the extension popup under **Backend API URL** and click **Save**!

@@ -340,3 +340,43 @@ input:checked + .slider::before {
   color: var(--accent-edu);
   min-height: 16px;
 }
+
+/* Server URL Input */
+.server-input-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.input-text {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.input-text:focus {
+  border-color: var(--accent-primary);
+}
+
+.btn-sm {
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-sm:hover {
+  background: var(--accent-hover);
+}

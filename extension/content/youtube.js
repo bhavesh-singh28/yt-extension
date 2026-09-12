@@ -133,8 +133,12 @@
         }
       }
 
-      // Clean up whitespace
+      // Clean up whitespace and duration / view count suffixes
       title = title.replace(/\s+/g, ' ').trim();
+      // Strip trailing video duration (e.g. "18 minutes", "2 hours, 15 minutes", "44 seconds")
+      title = title.replace(/\s+\d+\s*(hours?|minutes?|seconds?)(,\s*\d+\s*(minutes?|seconds?))?$/i, '').trim();
+      // Strip trailing view count / date
+      title = title.replace(/\s*•\s*\d+[\d,.]*[KMB]?\s*views.*$/i, '').trim();
 
       if (!title) return null;
 

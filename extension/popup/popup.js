@@ -32,6 +32,9 @@ const statRevealed = document.getElementById('stat-revealed');
 const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
 
+const inputBackendUrl = document.getElementById('input-backend-url');
+const btnSaveUrl = document.getElementById('btn-save-url');
+
 let currentSettings = { ...DEFAULT_SETTINGS };
 
 /**
@@ -56,6 +59,10 @@ async function loadState() {
     // Populate strictness radio
     for (const radio of strictnessRadios) {
       radio.checked = (radio.value === currentSettings.strictness);
+    }
+
+    if (inputBackendUrl) {
+      inputBackendUrl.value = currentSettings.backendUrl || 'http://localhost:3000';
     }
 
     // Populate statistics
@@ -165,6 +172,19 @@ btnClearCache.addEventListener('click', async () => {
     showFeedback('Failed to clear cache');
   }
 });
+
+if (btnSaveUrl) {
+  btnSaveUrl.addEventListener('click', async () => {
+    const rawVal = inputBackendUrl.value.trim();
+    if (!rawVal) return;
+    const cleanUrl = rawVal.replace(/\/+$/, '');
+    currentSettings.backendUrl = cleanUrl;
+    inputBackendUrl.value = cleanUrl;
+    await saveSettings();
+    showFeedback('Backend URL saved!');
+    checkBackendHealth(cleanUrl);
+  });
+}
 
 // Initialize on DOM loaded
 document.addEventListener('DOMContentLoaded', loadState);

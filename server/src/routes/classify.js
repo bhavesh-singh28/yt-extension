@@ -45,7 +45,6 @@ router.get('/logs', async (req, res) => {
 router.post('/classify', async (req, res, next) => {
   try {
     const { valid, error, sanitized } = validateClassifyRequest(req.body);
-    console.log(req.body, "----------------------------------------------------------------")
     if (!valid) {
       return res.status(400).json({ error });
     }

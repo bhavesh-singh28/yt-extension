@@ -7,8 +7,17 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Path to server/classifications.txt
-export const LOG_FILE_PATH = path.resolve(__dirname, '../../classifications.txt');
+
+// In AWS Lambda, only /tmp is writable; otherwise write to server/classifications.txt
+const isServerless = Boolean(
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.LAMBDA_TASK_ROOT ||
+  process.env.VERCEL
+);
+
+export const LOG_FILE_PATH = isServerless
+  ? '/tmp/classifications.txt'
+  : path.resolve(__dirname, '../../classifications.txt');
 
 /**
  * Appends a classification entry to classifications.txt

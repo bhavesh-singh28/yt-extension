@@ -41,7 +41,7 @@ async function callGeminiApi(prompt, apiKey, preferredModel) {
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.0,
-        maxOutputTokens: 1024
+        maxOutputTokens: 256
       }
     };
 
@@ -50,7 +50,8 @@ async function callGeminiApi(prompt, apiKey, preferredModel) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
-        signal: AbortSignal.timeout(10000)
+        keepalive: true,
+        signal: AbortSignal.timeout(8000)
       });
 
       if (!response.ok) {
@@ -180,7 +181,6 @@ Return strict JSON:
       }
     }
 
-    console.log(`[Gemini:Batch] 📤 Results (${modelUsed}):`);
     const results = videos.map(v => {
       const isEducational = resultMap.has(v.videoId) ? resultMap.get(v.videoId) : mockClassifier(v.title);
       console.log(`   ${isEducational ? '🎓 KEEP' : '🔒 BLUR'} [${v.videoId}] "${v.title}" -> isEducational: ${isEducational}`);
@@ -198,7 +198,6 @@ Return strict JSON:
 
     return results;
   } catch (err) {
-    console.error('[Gemini:Batch] Error:', err.message);
     const results = videos.map(v => ({
       videoId: v.videoId,
       isEducational: mockClassifier(v.title)
