@@ -1,6 +1,6 @@
 /**
  * Title Classifier Module
- * Combines fast local heuristics with backend Gemini batch/single classification
+ * Combines fast local heuristics with backend Gemini batch/single classification via background service worker
  */
 
 (function () {
@@ -10,7 +10,7 @@
     constructor() {
       this.config = window.YTStudyFilter.CONFIG;
 
-      // Obvious educational patterns (high confidence)
+      // Obvious educational patterns
       this.educationalPatterns = [
         /\b(tutorial|course|lecture|lectures|crash\s+course)\b/i,
         /\b(calculus|algebra|geometry|physics|chemistry|biology|neuroscience)\b/i,
@@ -61,12 +61,11 @@
         }
       }
 
-      // Ambiguous title - defer to Gemini API
       return null;
     }
 
     /**
-     * Classify a batch of videos via backend Gemini API
+     * Classify a batch of videos via background service worker to prevent Mixed Content / CSP blocking
      * @param {string} backendUrl
      * @param {Array<{ videoId: string, title: string }>} videos
      * @returns {Promise<Map<string, { classification: string, confidence: number, reason: string }>>}
@@ -75,73 +74,119 @@
       const results = new Map();
       if (!videos || videos.length === 0) return results;
 
-      const url = `${backendUrl.replace(/\/+$/, '')}/api/classify-batch`;
-      console.log(`%c[YT Study Filter:Classifier] 🚀 Calling backend ${url} for ${videos.length} videos...`, 'color: #8b5cf6; font-weight: bold;');
+      console.log(
+        `%c[YT Study Filter:Classifier] 🚀 Sending batch of ${videos.length} videos to background proxy...`,
+        'color: #8b5cf6; font-weight: bold;'
+      );
 
+      // 1. Primary: Use background service worker (bypasses Mixed Content and YouTube CSP)
+      if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+        try {
+          const response = await new Promise((resolve) => {
+            chrome.runtime.sendMessage({
+              action: 'CLASSIFY_BATCH',
+              backendUrl,
+              videos
+            }, (res) => {
+              if (chrome.runtime.lastError) {
+                console.warn('[YT Study Filter:Classifier] Chrome runtime error:', chrome.runtime.lastError.message);
+                resolve(null);
+              } else {
+                resolve(res);
+              }
+            });
+          });
+
+          if (response && response.success && Array.isArray(response.results)) {
+            for (const item of response.results) {
+              if (item && item.videoId) {
+                results.set(item.videoId, {
+                  classification: item.classification || 'UNCERTAIN',
+                  confidence: item.confidence || 0.5,
+                  reason: item.reason || ''
+                });
+              }
+            }
+            console.log(
+              `%c[YT Study Filter:Classifier] ✅ Received ${results.size} classifications via background proxy!`,
+              'color: #10b981; font-weight: bold;'
+            );
+            return results;
+          } else if (response && !response.success) {
+            console.warn(`%c[YT Study Filter:Classifier] ⚠️ Background proxy error: ${response.error}`, 'color: #f59e0b;');
+          }
+        } catch (err) {
+          console.warn('[YT Study Filter:Classifier] Message passing failed:', err.message);
+        }
+      }
+
+      // 2. Fallback: Direct fetch (works if running under localhost or HTTPS)
+      const url = `${backendUrl.replace(/\/+$/, '')}/api/classify-batch`;
       try {
         const response = await fetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ videos }),
           signal: AbortSignal.timeout(this.config.TIMINGS.API_TIMEOUT_MS)
         });
 
-        if (!response.ok) {
-          const errText = await response.text().catch(() => '');
-          console.warn(`%c[YT Study Filter:Classifier] ⚠️ Backend HTTP ${response.status}: ${errText}`, 'color: #f59e0b;');
-          return results;
-        }
-
-        const data = await response.json();
-        if (Array.isArray(data.results)) {
-          for (const item of data.results) {
-            if (item && item.videoId) {
-              results.set(item.videoId, {
-                classification: item.classification || 'UNCERTAIN',
-                confidence: item.confidence || 0.5,
-                reason: item.reason || ''
-              });
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data.results)) {
+            for (const item of data.results) {
+              if (item && item.videoId) {
+                results.set(item.videoId, {
+                  classification: item.classification || 'UNCERTAIN',
+                  confidence: item.confidence || 0.5,
+                  reason: item.reason || ''
+                });
+              }
             }
           }
-          console.log(`%c[YT Study Filter:Classifier] ✅ Received ${results.size} classifications from backend`, 'color: #10b981; font-weight: bold;');
         }
       } catch (err) {
-        console.warn(`%c[YT Study Filter:Classifier] ❌ Backend request failed: ${err.message} (Failing open)`, 'color: #ef4444;');
+        console.warn(`%c[YT Study Filter:Classifier] ❌ Direct fetch also failed: ${err.message}`, 'color: #ef4444;');
       }
 
       return results;
     }
 
     /**
-     * Classify a single video title via backend
+     * Classify a single video title
      */
     async classifySingle(backendUrl, videoId, title) {
-      const url = `${backendUrl.replace(/\/+$/, '')}/api/classify`;
+      if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+        try {
+          const response = await new Promise((resolve) => {
+            chrome.runtime.sendMessage({
+              action: 'CLASSIFY_SINGLE',
+              backendUrl,
+              videoId,
+              title
+            }, (res) => resolve(res));
+          });
 
+          if (response && response.success && response.data) {
+            return response.data;
+          }
+        } catch (err) {
+          console.warn('[YT Study Filter:Classifier] Single message passing failed:', err);
+        }
+      }
+
+      const url = `${backendUrl.replace(/\/+$/, '')}/api/classify`;
       try {
         const response = await fetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ videoId, title }),
           signal: AbortSignal.timeout(this.config.TIMINGS.API_TIMEOUT_MS)
         });
-
-        if (!response.ok) return null;
-
-        const data = await response.json();
-        return {
-          classification: data.classification || 'UNCERTAIN',
-          confidence: data.confidence || 0.5,
-          reason: data.reason || ''
-        };
+        if (response.ok) return await response.json();
       } catch (err) {
-        console.warn('[YTStudyFilter:Classifier] Single classification failed:', err.message);
-        return null;
+        console.warn('[YT Study Filter:Classifier] Direct single fetch failed:', err);
       }
+      return null;
     }
   }
 

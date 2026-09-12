@@ -3,6 +3,11 @@
  */
 
 (function () {
+  console.log(
+    '%c[YouTube Study Filter] 🎓 Extension Content Script Loaded! Target: ' + window.location.href,
+    'background: #6366f1; color: white; padding: 4px 10px; font-weight: bold; border-radius: 4px; font-size: 12px;'
+  );
+
   window.YTStudyFilter = window.YTStudyFilter || {};
 
   window.YTStudyFilter.CONFIG = {

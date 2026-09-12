@@ -26,7 +26,10 @@
     if (!currentSettings.enabled) return;
 
     const cards = youtube.findAllVideoCards();
-    if (cards.length === 0) return;
+    if (cards.length === 0) {
+      console.log('%c[YT Study Filter:Core] ⏳ No video cards found yet on this scan (DOM may still be hydrating).', 'color: #94a3b8;');
+      return;
+    }
 
     let newlyQueued = 0;
     let cacheHits = 0;
@@ -89,12 +92,10 @@
       batchTimer = setTimeout(flushBatchQueue, CONFIG.TIMINGS.BATCH_DEBOUNCE_MS);
     }
 
-    if (newlyQueued > 0) {
-      console.log(
-        `%c[YT Study Filter:Core] 📊 DOM Scan: ${cards.length} cards | ${cacheHits} cached | ${localHits} local | ${newlyQueued} queued for AI`,
-        'color: #6366f1; font-weight: bold;'
-      );
-    }
+    console.log(
+      `%c[YT Study Filter:Core] 📊 DOM Scan: ${cards.length} cards found | ${cacheHits} cached | ${localHits} local | ${newlyQueued} queued for AI`,
+      'color: #6366f1; font-weight: bold;'
+    );
   }
 
   /**
