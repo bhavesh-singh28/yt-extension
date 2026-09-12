@@ -232,6 +232,8 @@ The backend requests structured JSON outputs (`application/json`) from Gemini wi
 
 ## ☁️ Deployment Guide (AWS Lambda Serverless & CI/CD)
 
+> 📖 **Full Guide Available**: For the complete guide on getting AWS keys from scratch, IAM setup, and troubleshooting, see [**DEPLOYMENT.md**](file:///Users/bhavesh/Work/yt-chrome/DEPLOYMENT.md).
+
 The backend is built to run serverless on **AWS Lambda** using Function URLs, giving you sub-second cold starts, zero idle cost, and effortless scaling.
 
 We provide two deployment paths:
