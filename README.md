@@ -230,57 +230,108 @@ The backend requests structured JSON outputs (`application/json`) from Gemini wi
 * **Privacy by Design**: Only video IDs and video titles are processed. User watch history, account details, comments, and cookies are never accessed or sent to the backend.
 ---
 
-## ☁️ Deployment Guide (Render & AWS Lambda)
+## ☁️ Deployment Guide (AWS Lambda Serverless & CI/CD)
 
-You can easily deploy this backend to the cloud so you don't need to run it locally on your machine.
+The backend is built to run serverless on **AWS Lambda** using Function URLs, giving you sub-second cold starts, zero idle cost, and effortless scaling.
 
-### Option A: Deploy to Render (Recommended - Free & Easiest)
-
-Render provides free Node.js hosting with automatic HTTPS.
-
-1. Push this repository to GitHub or GitLab.
-2. Go to [Render Dashboard](https://dashboard.render.com/) and click **New → Web Service**.
-3. Connect your repository.
-4. Set the following options:
-   * **Root Directory**: `server`
-   * **Runtime**: `Node`
-   * **Build Command**: `npm install`
-   * **Start Command**: `npm start`
-5. Under **Environment Variables**, add:
-   * `GEMINI_API_KEY`: Your Gemini API Key from Google AI Studio.
-   * `GEMINI_MODEL`: `gemini-3.5-flash-lite`
-   * `NODE_ENV`: `production`
-   * `ALLOWED_ORIGINS`: `*`
-6. Click **Create Web Service**.
-7. Once deployed, Render will provide a public URL like:
-   ```text
-   https://youtube-study-filter.onrender.com
-   ```
-8. **Connect Extension**: Click the extension icon in Chrome, paste your Render URL into the **Backend API URL** field, and click **Save**!
+We provide two deployment paths:
+1. **Automated 1-Click Shell Script** (`server/deploy-aws.sh`)
+2. **Automated CI/CD Pipeline with GitHub Actions** (`.github/workflows/deploy-lambda.yml`)
 
 ---
 
-### Option B: Deploy to AWS Lambda (Serverless)
+### Method 1: Automated 1-Click Deployment Script (`deploy-aws.sh`)
 
-We included a zero-dependency native AWS Lambda handler (`server/lambda.js`) that works with **AWS Lambda Function URLs** or **Amazon API Gateway**.
+This script automatically provisions the IAM role, creates/updates the Lambda function with Node.js 20.x, configures the public Function URL with CORS, and injects your environment variables.
+
+1. **Prerequisites**:
+   * [AWS CLI installed](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and configured:
+     ```bash
+     aws configure
+     ```
+
+2. **Run the deployment script**:
+   ```bash
+   cd server
+   chmod +x deploy-aws.sh
+   ./deploy-aws.sh
+   ```
+
+3. **Output**:
+   The script outputs your live HTTPS Function URL:
+   ```text
+   🔗 Function URL:
+      https://abcdef123456789.lambda-url.us-east-1.on.aws/
+   ```
+
+4. **Connect to Extension**:
+   * Open Chrome and click the **YouTube Study Filter** extension icon.
+   * Paste your Function URL into the **Backend API URL** field.
+   * Click **Save Settings**.
+
+---
+
+### Method 2: Automated CI/CD Pipeline (GitHub Actions)
+
+Continuous Deployment is set up via `.github/workflows/deploy-lambda.yml`. Every time you push changes to the `server/` directory on the `main` branch, GitHub Actions builds and updates the Lambda function automatically.
+
+#### 1. Setup GitHub Secrets
+In your GitHub repository, go to **Settings → Secrets and variables → Actions → New repository secret**, and add:
+
+| Secret Name | Description | Example / Default |
+|-------------|-------------|-------------------|
+| `AWS_ACCESS_KEY_ID` | AWS IAM User Access Key | `AKIAIOSFODNN7EXAMPLE` |
+| `AWS_SECRET_ACCESS_KEY` | AWS IAM User Secret Key | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` |
+| `AWS_REGION` | Target AWS Region | `us-east-1` |
+| `AWS_LAMBDA_FUNCTION_NAME` | Name of your Lambda function | `youtube-study-filter` |
+| `GEMINI_API_KEY` | Google Gemini API Key | `AIzaSy...` |
+| `GEMINI_MODEL` | *(Optional)* Model identifier | `gemini-3.5-flash-lite` |
+
+#### 2. IAM Permissions Required for GitHub Actions
+The AWS IAM user or role used for CI/CD needs these permissions:
+* `lambda:UpdateFunctionCode`
+* `lambda:UpdateFunctionConfiguration`
+* `lambda:GetFunction`
+* `lambda:GetFunctionConfiguration`
+
+#### 3. Triggering Deployments
+* **Automated**: Push to `main` branch with changes under `server/**`.
+* **Manual**: Go to **Actions** tab on GitHub → select **"Deploy to AWS Lambda"** → click **"Run workflow"**.
+
+---
+
+### Method 3: Manual AWS Console Deployment
+
+If you prefer using the AWS Management Console directly:
 
 1. **Package the server**:
    ```bash
    cd server
+   rm -rf node_modules
    npm ci --omit=dev
-   zip -r function.zip lambda.js src package.json
+   zip -q -r function.zip lambda.js src package.json node_modules
    ```
 2. **Create Lambda Function in AWS Console**:
-   * **Function Name**: `youtube-study-filter`
-   * **Runtime**: `Node.js 20.x`
-   * **Handler**: `lambda.handler`
-3. **Upload Zip**: Upload `function.zip` under **Code source**.
-4. **Environment Variables** (under *Configuration → Environment variables*):
-   * `GEMINI_API_KEY`: Your Gemini API Key.
-   * `GEMINI_MODEL`: `gemini-3.5-flash-lite`
-5. **Enable Function URL** (easiest):
-   * Go to *Configuration → Function URL* → Click **Create function URL**.
+   * Open the **AWS Lambda Console** → click **Create function**.
+   * Function name: `youtube-study-filter`
+   * Runtime: `Node.js 20.x`
+   * Architecture: `x86_64` (or `arm64`)
+3. **Upload Code**:
+   * Under the **Code** tab, click **Upload from → .zip file** and select `server/function.zip`.
+   * Under **Runtime settings**, ensure the Handler is set to `lambda.handler`.
+4. **Configure Environment Variables**:
+   * Go to **Configuration → Environment variables → Edit**.
+   * Add:
+     * `GEMINI_API_KEY`: Your Gemini API Key from Google AI Studio.
+     * `GEMINI_MODEL`: `gemini-3.5-flash-lite`
+     * `NODE_ENV`: `production`
+     * `ALLOWED_ORIGINS`: `*`
+5. **Configure Function URL & CORS**:
+   * Go to **Configuration → Function URL → Create function URL**.
    * Auth type: `NONE`.
-   * Configure CORS: Allow Origin `*`, Methods `GET, POST, OPTIONS`, Headers `*`.
-6. Copy the generated Function URL (e.g. `https://xyz.lambda-url.us-east-1.on.aws`).
-7. Paste this URL into the extension popup under **Backend API URL** and click **Save**!
+   * Check **Configure cross-origin resource sharing (CORS)**:
+     * Allow origin: `*`
+     * Allow headers: `*`
+     * Allow methods: `*`
+   * Click **Save**.
+6. **Copy URL**: Copy your Function URL and paste it into the Chrome Extension popup under **Backend API URL**.
