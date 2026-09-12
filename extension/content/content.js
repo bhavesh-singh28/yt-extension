@@ -64,12 +64,12 @@
         if (localResult) {
           localHits++;
           console.log(
-            `%c[YT Study Filter:Core] 🧠 Local heuristic classified [${videoId}] "${title}" as ${localResult.classification}`,
+            `%c[YT Study Filter:Core] 🧠 Local match [${videoId}] "${title}" -> isEducational: ${localResult.isEducational}`,
             'color: #38bdf8; font-weight: bold;'
           );
           cache.set(videoId, localResult);
           cache.incrementStat('videosAnalyzed');
-          if (localResult.classification === 'EDUCATIONAL') {
+          if (localResult.isEducational) {
             cache.incrementStat('educationalVideos');
           } else {
             cache.incrementStat('nonEducationalVideos');
@@ -136,9 +136,7 @@
       pendingRequests.delete(videoId);
 
       const classificationData = results.get(videoId) || {
-        classification: 'UNCERTAIN',
-        confidence: 0.5,
-        reason: 'Backend unavailable or unclassified'
+        isEducational: false
       };
 
       // Store in cache
@@ -146,9 +144,9 @@
 
       // Update statistics
       cache.incrementStat('videosAnalyzed');
-      if (classificationData.classification === 'EDUCATIONAL') {
+      if (classificationData.isEducational) {
         cache.incrementStat('educationalVideos');
-      } else if (classificationData.classification === 'NON_EDUCATIONAL') {
+      } else {
         cache.incrementStat('nonEducationalVideos');
       }
 

@@ -1,6 +1,6 @@
 /**
  * Title Classifier Module
- * Combines fast local heuristics with backend Gemini batch/single classification via background service worker
+ * Binary classification: isEducational (true = normal, false = blur)
  */
 
 (function () {
@@ -10,7 +10,6 @@
     constructor() {
       this.config = window.YTStudyFilter.CONFIG;
 
-      // Obvious educational patterns
       this.educationalPatterns = [
         /\b(tutorial|course|lecture|lectures|crash\s+course)\b/i,
         /\b(calculus|algebra|geometry|physics|chemistry|biology|neuroscience)\b/i,
@@ -21,7 +20,6 @@
         /\b(exam\s+prep|sat\s+math|ielts|toefl|mcat|gre|gmat|upsc)\b/i
       ];
 
-      // Obvious entertainment / non-educational patterns
       this.nonEducationalPatterns = [
         /\b(vlog|prank|pranks|reacts?|reaction|reactions)\b/i,
         /\b(try\s+not\s+to\s+laugh|funny\s+moments|bloopers|fails\s+compilation)\b/i,
@@ -34,30 +32,20 @@
     }
 
     /**
-     * Fast local heuristic classification to save network roundtrips for obvious titles
-     * @param {string} title
-     * @returns {{ classification: 'EDUCATIONAL'|'NON_EDUCATIONAL', confidence: number, reason: string } | null}
+     * Fast local heuristic match -> { isEducational: true | false } | null
      */
     classifyLocally(title) {
       if (!title) return null;
 
       for (const pattern of this.educationalPatterns) {
         if (pattern.test(title)) {
-          return {
-            classification: 'EDUCATIONAL',
-            confidence: 0.95,
-            reason: 'Local educational heuristic match'
-          };
+          return { isEducational: true };
         }
       }
 
       for (const pattern of this.nonEducationalPatterns) {
         if (pattern.test(title)) {
-          return {
-            classification: 'NON_EDUCATIONAL',
-            confidence: 0.95,
-            reason: 'Local entertainment heuristic match'
-          };
+          return { isEducational: false };
         }
       }
 
@@ -65,21 +53,21 @@
     }
 
     /**
-     * Classify a batch of videos via background service worker to prevent Mixed Content / CSP blocking
+     * Classify batch via background service worker proxy
      * @param {string} backendUrl
      * @param {Array<{ videoId: string, title: string }>} videos
-     * @returns {Promise<Map<string, { classification: string, confidence: number, reason: string }>>}
+     * @returns {Promise<Map<string, { isEducational: boolean }>>}
      */
     async classifyBatch(backendUrl, videos) {
       const results = new Map();
       if (!videos || videos.length === 0) return results;
 
       console.log(
-        `%c[YT Study Filter:Classifier] 🚀 Sending batch of ${videos.length} videos to background proxy...`,
+        `%c[YT Study Filter:Classifier] 🚀 Checking ${videos.length} video(s) via backend...`,
         'color: #8b5cf6; font-weight: bold;'
       );
 
-      // 1. Primary: Use background service worker (bypasses Mixed Content and YouTube CSP)
+      // 1. Primary: Extension background service worker
       if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
         try {
           const response = await new Promise((resolve) => {
@@ -89,7 +77,6 @@
               videos
             }, (res) => {
               if (chrome.runtime.lastError) {
-                console.warn('[YT Study Filter:Classifier] Chrome runtime error:', chrome.runtime.lastError.message);
                 resolve(null);
               } else {
                 resolve(res);
@@ -100,27 +87,18 @@
           if (response && response.success && Array.isArray(response.results)) {
             for (const item of response.results) {
               if (item && item.videoId) {
-                results.set(item.videoId, {
-                  classification: item.classification || 'UNCERTAIN',
-                  confidence: item.confidence || 0.5,
-                  reason: item.reason || ''
-                });
+                const isEdu = item.isEducational === true;
+                results.set(item.videoId, { isEducational: isEdu });
               }
             }
-            console.log(
-              `%c[YT Study Filter:Classifier] ✅ Received ${results.size} classifications via background proxy!`,
-              'color: #10b981; font-weight: bold;'
-            );
             return results;
-          } else if (response && !response.success) {
-            console.warn(`%c[YT Study Filter:Classifier] ⚠️ Background proxy error: ${response.error}`, 'color: #f59e0b;');
           }
         } catch (err) {
-          console.warn('[YT Study Filter:Classifier] Message passing failed:', err.message);
+          console.warn('[YT Study Filter:Classifier] Message passing failed:', err);
         }
       }
 
-      // 2. Fallback: Direct fetch (works if running under localhost or HTTPS)
+      // 2. Direct fallback
       const url = `${backendUrl.replace(/\/+$/, '')}/api/classify-batch`;
       try {
         const response = await fetch(url, {
@@ -135,24 +113,20 @@
           if (Array.isArray(data.results)) {
             for (const item of data.results) {
               if (item && item.videoId) {
-                results.set(item.videoId, {
-                  classification: item.classification || 'UNCERTAIN',
-                  confidence: item.confidence || 0.5,
-                  reason: item.reason || ''
-                });
+                results.set(item.videoId, { isEducational: item.isEducational === true });
               }
             }
           }
         }
       } catch (err) {
-        console.warn(`%c[YT Study Filter:Classifier] ❌ Direct fetch also failed: ${err.message}`, 'color: #ef4444;');
+        console.warn(`[YT Study Filter:Classifier] Fetch error: ${err.message}`);
       }
 
       return results;
     }
 
     /**
-     * Classify a single video title
+     * Classify single video title
      */
     async classifySingle(backendUrl, videoId, title) {
       if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
@@ -167,10 +141,13 @@
           });
 
           if (response && response.success && response.data) {
-            return response.data;
+            return {
+              videoId,
+              isEducational: response.data.isEducational === true
+            };
           }
         } catch (err) {
-          console.warn('[YT Study Filter:Classifier] Single message passing failed:', err);
+          // ignore
         }
       }
 
@@ -182,9 +159,12 @@
           body: JSON.stringify({ videoId, title }),
           signal: AbortSignal.timeout(this.config.TIMINGS.API_TIMEOUT_MS)
         });
-        if (response.ok) return await response.json();
+        if (response.ok) {
+          const data = await response.json();
+          return { videoId, isEducational: data.isEducational === true };
+        }
       } catch (err) {
-        console.warn('[YT Study Filter:Classifier] Direct single fetch failed:', err);
+        // ignore
       }
       return null;
     }

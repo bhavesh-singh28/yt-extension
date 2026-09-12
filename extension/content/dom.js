@@ -1,6 +1,8 @@
 /**
  * DOM Manipulation and Overlay Manager
- * Handles non-destructive card blurring and session-based reveal button overlays
+ * Simple binary logic:
+ * isEducational: true -> normal
+ * isEducational: false -> blur card and show reveal button
  */
 
 (function () {
@@ -13,34 +15,10 @@
     }
 
     /**
-     * Determines whether a video should be blurred based on classification and strictness
-     * @param {string} classification
-     * @param {number} confidence
-     * @param {string} strictnessMode - 'relaxed' | 'balanced' | 'strict'
-     * @returns {boolean}
-     */
-    shouldBlur(classification, confidence, strictnessMode = 'balanced') {
-      if (classification === 'NON_EDUCATIONAL') {
-        if (strictnessMode === 'relaxed') {
-          return confidence >= 0.75;
-        }
-        return true;
-      }
-
-      if (classification === 'UNCERTAIN') {
-        // In strict mode, blur uncertain content
-        return strictnessMode === 'strict';
-      }
-
-      // EDUCATIONAL is never blurred
-      return false;
-    }
-
-    /**
-     * Apply study filter action to a video element
+     * Apply filter: if isEducational is false, blur it!
      * @param {HTMLElement} cardElement
      * @param {string} videoId
-     * @param {{ classification: string, confidence: number, reason?: string }} classificationData
+     * @param {{ isEducational: boolean }} classificationData
      * @param {object} settings
      * @param {string} [title=""]
      */
@@ -49,35 +27,32 @@
 
       cardElement.classList.add(this.config.CLASSES.PROCESSED);
       cardElement.dataset.ytStudyFilterVideoId = videoId;
-      cardElement.dataset.ytStudyFilterClassification = classificationData.classification;
+      cardElement.dataset.ytStudyFilterEdu = String(classificationData.isEducational);
 
-      // If filter is globally disabled or blur is disabled
+      // If globally disabled
       if (!settings.enabled || !settings.blurEnabled) {
         this.removeBlur(cardElement);
         return;
       }
 
-      // If user has already revealed this video during this session
+      // If revealed by user during session
       if (this.revealedSessionIds.has(videoId)) {
         this.removeBlur(cardElement);
         return;
       }
 
-      const mustBlur = this.shouldBlur(
-        classificationData.classification,
-        classificationData.confidence,
-        settings.strictness
-      );
+      // Pure binary check: If not educational -> BLUR!
+      const shouldBlur = classificationData.isEducational === false;
 
-      if (mustBlur) {
+      if (shouldBlur) {
         console.log(
-          `%c[YT Study Filter:DOM] 🔒 BLURRED: [${videoId}] "${title || 'video'}" (${classificationData.classification}, conf: ${classificationData.confidence})`,
+          `%c[YT Study Filter:DOM] 🔒 BLURRED: "${title || videoId}" (isEducational: false)`,
           'color: #f43f5e; font-weight: bold;'
         );
         this.blurCard(cardElement, videoId, settings);
       } else {
         console.log(
-          `%c[YT Study Filter:DOM] 🎓 UNBLURRED: [${videoId}] "${title || 'video'}" (${classificationData.classification})`,
+          `%c[YT Study Filter:DOM] 🎓 KEEP: "${title || videoId}" (isEducational: true)`,
           'color: #10b981;'
         );
         this.removeBlur(cardElement);
@@ -86,9 +61,6 @@
 
     /**
      * Blurs a video card and injects the reveal button overlay
-     * @param {HTMLElement} cardElement
-     * @param {string} videoId
-     * @param {object} settings
      */
     blurCard(cardElement, videoId, settings) {
       cardElement.classList.add(this.config.CLASSES.BLURRED);
@@ -107,7 +79,7 @@
         ) || cardElement;
       }
 
-      // Ensure container has relative positioning so overlay covers it cleanly
+      // Ensure container has relative positioning
       const computedPos = window.getComputedStyle(thumbContainer).position;
       if (computedPos === 'static') {
         thumbContainer.style.position = 'relative';
@@ -125,9 +97,6 @@
 
     /**
      * Creates the glassmorphism overlay element with Show button
-     * @param {string} videoId
-     * @param {HTMLElement} cardElement
-     * @returns {HTMLElement}
      */
     createRevealOverlay(videoId, cardElement) {
       const overlay = document.createElement('div');
@@ -151,12 +120,11 @@
       showBtn.textContent = 'Show';
       showBtn.setAttribute('title', 'Reveal video for this session');
 
-      // Click listener on Show button
       showBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        console.log(`%c[YT Study Filter:DOM] 🔓 User revealed video [${videoId}] for session`, 'color: #f59e0b; font-weight: bold;');
+        console.log(`%c[YT Study Filter:DOM] 🔓 User revealed [${videoId}]`, 'color: #f59e0b; font-weight: bold;');
         this.revealedSessionIds.add(videoId);
         this.removeBlur(cardElement);
 
@@ -165,7 +133,6 @@
         }
       });
 
-      // Prevent entire overlay from triggering YouTube player navigation
       overlay.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -180,7 +147,6 @@
 
     /**
      * Removes blur and hides overlay from a video card
-     * @param {HTMLElement} cardElement
      */
     removeBlur(cardElement) {
       if (!cardElement) return;

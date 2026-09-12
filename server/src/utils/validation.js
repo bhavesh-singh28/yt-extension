@@ -24,7 +24,6 @@ export function validateClassifyRequest(body) {
     return { valid: false, error: 'Field "title" must be a non-empty string' };
   }
 
-  // Sanitize length to prevent prompt injection / oversized requests
   const sanitizedVideoId = videoId.trim().slice(0, 64);
   const sanitizedTitle = title.trim().slice(0, 500);
 
@@ -84,26 +83,12 @@ export function validateBatchClassifyRequest(body) {
 }
 
 /**
- * Normalizes a classification value to ensure it matches allowed enums
- * @param {string} val
- * @returns {'EDUCATIONAL' | 'NON_EDUCATIONAL' | 'UNCERTAIN'}
+ * Normalizes isEducational to a strict boolean
+ * @param {any} val
+ * @returns {boolean}
  */
-export function normalizeClassification(val) {
-  if (typeof val !== 'string') return 'UNCERTAIN';
-  const upper = val.toUpperCase().trim();
-  if (VALID_CLASSIFICATIONS.has(upper)) {
-    return upper;
-  }
-  return 'UNCERTAIN';
-}
-
-/**
- * Normalizes confidence score between 0.0 and 1.0
- * @param {number|any} val
- * @returns {number}
- */
-export function normalizeConfidence(val) {
-  const num = parseFloat(val);
-  if (isNaN(num)) return 0.5;
-  return Math.max(0.0, Math.min(1.0, Math.round(num * 100) / 100));
+export function normalizeIsEducational(val) {
+  if (typeof val === 'boolean') return val;
+  if (val === 'true' || val === 1 || val === 'EDUCATIONAL') return true;
+  return false;
 }

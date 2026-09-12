@@ -1,22 +1,18 @@
 /**
- * Service to interact with the Gemini API for video title classification
+ * Service to interact with the Gemini API for simple binary video classification:
+ * isEducational: true (leave normal) | false (blur)
  */
 
-import { normalizeClassification, normalizeConfidence } from '../utils/validation.js';
+import { normalizeIsEducational } from '../utils/validation.js';
 
-const SYSTEM_INSTRUCTION = `You are classifying YouTube videos for a distraction-free study mode.
+const SYSTEM_INSTRUCTION = `You are a binary filter for YouTube study mode.
+Determine if each video title is EDUCATIONAL (true) or NON-EDUCATIONAL (false).
 
-EDUCATIONAL means the video's primary purpose is teaching, explaining, practicing, or providing useful knowledge/skills. This includes programming, computer science, mathematics, science, engineering, academics, tutorials, lectures, exam preparation, career/technical learning, language learning, and educational documentaries.
+isEducational: true -> Learning, coding, science, mathematics, engineering, tutorials, lectures, academics, courses, exam preparation, skills.
+isEducational: false -> Entertainment, gaming, vlogs, memes, comedy, music, reactions, sports highlights, drama, pranks, clickbait.
 
-NON_EDUCATIONAL includes entertainment, gaming entertainment, celebrity content, gossip, memes, comedy, music, sports entertainment, reactions, vlogs, lifestyle content, drama, clickbait entertainment, and general time-wasting content.
+Return strict JSON only. No explanations.`;
 
-Do not classify a video as educational merely because the title contains words such as 'learn', 'knowledge', 'tips', or 'how to'.
-
-Always evaluate the realistic user intent and content nature behind the title. If completely ambiguous or impossible to determine from title alone, return UNCERTAIN.
-
-Return strict JSON only matching the requested schema.`;
-
-// Candidate models to try in order if one returns 404
 const FALLBACK_MODELS = [
   'gemini-3.5-flash-lite',
   'gemini-2.5-flash',
@@ -25,11 +21,7 @@ const FALLBACK_MODELS = [
 ];
 
 /**
- * Perform direct HTTP request to Gemini API with automatic model fallback
- * @param {string} prompt - Prompt text
- * @param {string} apiKey - Gemini API Key
- * @param {string} preferredModel - Model identifier
- * @returns {Promise<{ text: string, modelUsed: string }>} Raw text output and model used
+ * Call Gemini API with automatic model fallback
  */
 async function callGeminiApi(prompt, apiKey, preferredModel) {
   const modelsToTry = [
@@ -43,58 +35,36 @@ async function callGeminiApi(prompt, apiKey, preferredModel) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const requestBody = {
-      contents: [
-        {
-          parts: [
-            { text: prompt }
-          ]
-        }
-      ],
-      systemInstruction: {
-        parts: [
-          { text: SYSTEM_INSTRUCTION }
-        ]
-      },
+      contents: [{ parts: [{ text: prompt }] }],
+      systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
       generationConfig: {
         responseMimeType: "application/json",
-        temperature: 0.1,
-        maxOutputTokens: 2048
+        temperature: 0.0,
+        maxOutputTokens: 1024
       }
     };
 
     try {
-      console.log(`[GeminiService] 🤖 Querying model "${model}"...`);
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
         signal: AbortSignal.timeout(10000)
       });
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => '');
-        console.warn(`[GeminiService] Model "${model}" failed with HTTP ${response.status}: ${errorText.slice(0, 200)}`);
-
-        // If 404, try next fallback model
         if (response.status === 404) {
           lastError = new Error(`HTTP 404 for model ${model}`);
           continue;
         }
-
+        const errorText = await response.text().catch(() => '');
         throw new Error(`Gemini API HTTP ${response.status}: ${errorText || response.statusText}`);
       }
 
       const data = await response.json();
-      const candidate = data.candidates?.[0];
-      const text = candidate?.content?.parts?.[0]?.text;
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) throw new Error('Empty response from Gemini');
 
-      if (!text) {
-        throw new Error('Gemini API returned an empty or missing response part');
-      }
-
-      console.log(`[GeminiService] ✅ Success with model "${model}"`);
       return { text, modelUsed: model };
     } catch (err) {
       lastError = err;
@@ -109,139 +79,80 @@ async function callGeminiApi(prompt, apiKey, preferredModel) {
 }
 
 /**
- * Local heuristic mock classifier used when GEMINI_API_KEY is not configured
+ * Fast mock heuristic if API key is not configured
  */
 function mockClassifier(title) {
   const lower = title.toLowerCase();
-
-  const educationalKeywords = [
-    'tutorial', 'course', 'lecture', 'learn ', 'explaining', 'explained',
-    'python', 'javascript', 'react', 'css', 'html', 'database', 'sql',
-    'calculus', 'physics', 'chemistry', 'biology', 'math', 'algebra',
-    'algorithm', 'data structure', 'leetcode', 'cs50', 'engineering',
-    'system design', 'machine learning', 'deep learning', 'exam prep',
-    'documentary', 'mit opencourseware'
+  const eduKeywords = [
+    'tutorial', 'course', 'lecture', 'learn', 'explaining', 'python',
+    'javascript', 'react', 'css', 'sql', 'calculus', 'physics', 'math',
+    'algebra', 'leetcode', 'cs50', 'engineering', 'exam prep', 'mit '
   ];
 
-  const nonEducationalKeywords = [
-    'vlog', 'prank', 'reaction', 'challenge', 'highlights', 'gameplay',
-    'gossip', 'celebrity', 'drama', 'funny moments', 'meme', 'trailer',
-    'official music video', 'mv', 'tiktok', 'try not to laugh', 'shorts',
-    'unboxing', 'haul', 'room tour', 'gaming', 'walkthrough'
-  ];
-
-  for (const kw of educationalKeywords) {
-    if (lower.includes(kw)) {
-      return { classification: 'EDUCATIONAL', confidence: 0.92, reason: `Matches educational topic: "${kw}"` };
-    }
+  for (const kw of eduKeywords) {
+    if (lower.includes(kw)) return true;
   }
-
-  for (const kw of nonEducationalKeywords) {
-    if (lower.includes(kw)) {
-      return { classification: 'NON_EDUCATIONAL', confidence: 0.94, reason: `Matches entertainment category: "${kw}"` };
-    }
-  }
-
-  return { classification: 'UNCERTAIN', confidence: 0.5, reason: 'Ambiguous title, treated as uncertain' };
+  return false;
 }
 
 /**
- * Classify a single video title
+ * Classify a single video title -> isEducational: true | false
  */
 export async function classifyTitle(videoId, title) {
   const apiKey = (process.env.GEMINI_API_KEY || '').trim();
   const model = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').trim();
 
-  console.log(`\n[Classify:Single] 📥 Video [${videoId}]: "${title}"`);
-
   if (!apiKey || apiKey === 'your_gemini_api_key_here') {
-    console.warn('[GeminiService] No GEMINI_API_KEY provided. Using local mock classification.');
-    const mockResult = mockClassifier(title);
-    return {
-      videoId,
-      classification: mockResult.classification,
-      confidence: mockResult.confidence,
-      reason: `${mockResult.reason} (mock mode)`
-    };
+    const isEducational = mockClassifier(title);
+    return { videoId, isEducational };
   }
 
-  const prompt = `Classify this YouTube video title:
+  const prompt = `Classify this video title:
 Video ID: "${videoId}"
 Title: "${title}"
 
-Return JSON matching:
+Return JSON:
 {
-  "classification": "EDUCATIONAL" | "NON_EDUCATIONAL" | "UNCERTAIN",
-  "confidence": 0.0 to 1.0,
-  "reason": "short explanation"
+  "videoId": "${videoId}",
+  "isEducational": true or false
 }`;
 
   try {
-    const { text: rawJson, modelUsed } = await callGeminiApi(prompt, apiKey, model);
+    const { text: rawJson } = await callGeminiApi(prompt, apiKey, model);
     const parsed = JSON.parse(rawJson);
+    const isEducational = normalizeIsEducational(parsed.isEducational);
 
-    const classification = normalizeClassification(parsed.classification);
-    const confidence = normalizeConfidence(parsed.confidence);
-    const reason = typeof parsed.reason === 'string' ? parsed.reason.slice(0, 200) : '';
-
-    const icon = classification === 'EDUCATIONAL' ? '🎓' : classification === 'NON_EDUCATIONAL' ? '🚫' : '❓';
-    console.log(`[Classify:Single] ${icon} Result for [${videoId}]: ${classification} (conf: ${confidence}) - ${reason} [model: ${modelUsed}]`);
-
-    return {
-      videoId,
-      classification,
-      confidence,
-      reason
-    };
+    console.log(`[Gemini] [${videoId}] "${title}" -> isEducational: ${isEducational} ${isEducational ? '🎓 KEEP' : '🔒 BLUR'}`);
+    return { videoId, isEducational };
   } catch (err) {
-    console.error(`[GeminiService] ❌ Error classifying video "${videoId}":`, err.message);
-
-    const fallback = mockClassifier(title);
-    return {
-      videoId,
-      classification: fallback.classification,
-      confidence: fallback.confidence,
-      reason: `Fallback on error: ${err.message}`
-    };
+    console.error(`[Gemini] Error classifying [${videoId}]:`, err.message);
+    return { videoId, isEducational: mockClassifier(title) };
   }
 }
 
 /**
- * Classify a batch of video titles in a single Gemini API call
+ * Classify a batch of video titles -> [{ videoId, isEducational }, ...]
  */
 export async function classifyBatchTitles(videos) {
   const apiKey = (process.env.GEMINI_API_KEY || '').trim();
   const model = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').trim();
 
-  console.log(`\n[Classify:Batch] 📥 Received batch of ${videos.length} videos to classify:`);
-  videos.forEach((v, idx) => {
-    console.log(`   ${idx + 1}. [${v.videoId}] "${v.title}"`);
-  });
-
   if (!apiKey || apiKey === 'your_gemini_api_key_here') {
-    console.warn('[GeminiService] No GEMINI_API_KEY provided. Using local mock classification for batch.');
-    return videos.map(v => {
-      const mockResult = mockClassifier(v.title);
-      return {
-        videoId: v.videoId,
-        classification: mockResult.classification,
-        confidence: mockResult.confidence,
-        reason: `${mockResult.reason} (mock mode)`
-      };
-    });
+    return videos.map(v => ({
+      videoId: v.videoId,
+      isEducational: mockClassifier(v.title)
+    }));
   }
 
-  const prompt = `Classify each of the following YouTube video titles for a distraction-free study mode:
+  const prompt = `Classify whether each video is educational (true) or non-educational (false):
 ${JSON.stringify(videos, null, 2)}
 
-Return a strict JSON object with a "results" array matching this exact schema:
+Return strict JSON:
 {
   "results": [
     {
-      "videoId": "string matching input",
-      "classification": "EDUCATIONAL" | "NON_EDUCATIONAL" | "UNCERTAIN",
-      "confidence": 0.0 to 1.0,
-      "reason": "short explanation"
+      "videoId": "string",
+      "isEducational": true or false
     }
   ]
 }`;
@@ -250,50 +161,29 @@ Return a strict JSON object with a "results" array matching this exact schema:
     const { text: rawJson, modelUsed } = await callGeminiApi(prompt, apiKey, model);
     const parsed = JSON.parse(rawJson);
 
-    if (!Array.isArray(parsed.results)) {
-      throw new Error('Gemini response missing "results" array');
-    }
-
     const resultMap = new Map();
-    for (const item of parsed.results) {
-      if (item && item.videoId) {
-        resultMap.set(item.videoId, {
-          videoId: item.videoId,
-          classification: normalizeClassification(item.classification),
-          confidence: normalizeConfidence(item.confidence),
-          reason: typeof item.reason === 'string' ? item.reason.slice(0, 200) : ''
-        });
+    if (Array.isArray(parsed.results)) {
+      for (const item of parsed.results) {
+        if (item && item.videoId) {
+          resultMap.set(item.videoId, normalizeIsEducational(item.isEducational));
+        }
       }
     }
 
-    console.log(`[Classify:Batch] 📤 Classifications returned by ${modelUsed}:`);
-    const finalResults = videos.map(v => {
-      let res = resultMap.get(v.videoId);
-      if (!res) {
-        res = {
-          videoId: v.videoId,
-          classification: 'UNCERTAIN',
-          confidence: 0.5,
-          reason: 'Missing from model output'
-        };
-      }
-      const icon = res.classification === 'EDUCATIONAL' ? '🎓' : res.classification === 'NON_EDUCATIONAL' ? '🚫' : '❓';
-      console.log(`   ${icon} [${res.videoId}] ${res.classification} (${res.confidence}) - ${res.reason}`);
-      return res;
-    });
-
-    return finalResults;
-  } catch (err) {
-    console.error('[GeminiService] ❌ Batch classification failed:', err.message);
-
+    console.log(`[Gemini:Batch] 📤 Results (${modelUsed}):`);
     return videos.map(v => {
-      const fallback = mockClassifier(v.title);
+      const isEducational = resultMap.has(v.videoId) ? resultMap.get(v.videoId) : mockClassifier(v.title);
+      console.log(`   ${isEducational ? '🎓 KEEP' : '🔒 BLUR'} [${v.videoId}] "${v.title}" -> isEducational: ${isEducational}`);
       return {
         videoId: v.videoId,
-        classification: fallback.classification,
-        confidence: fallback.confidence,
-        reason: `Fallback batch error: ${err.message}`
+        isEducational
       };
     });
+  } catch (err) {
+    console.error('[Gemini:Batch] Error:', err.message);
+    return videos.map(v => ({
+      videoId: v.videoId,
+      isEducational: mockClassifier(v.title)
+    }));
   }
 }
