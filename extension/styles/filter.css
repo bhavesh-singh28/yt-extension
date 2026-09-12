@@ -12,12 +12,19 @@
 .yt-study-filter-blurred #thumbnail,
 .yt-study-filter-blurred a#thumbnail,
 .yt-study-filter-blurred .ytd-thumbnail,
+.yt-study-filter-blurred yt-thumbnail-view-model,
+.yt-study-filter-blurred [class*="yt-thumbnail-view-model"],
+.yt-study-filter-blurred [class*="yt-lockup-view-model-wiz__image"],
 .yt-study-filter-blurred ytd-reel-item-renderer {
   overflow: hidden !important;
   position: relative !important;
 }
 
-/* Blur effect on non-educational video cards */
+/* Force blur on modern 2026 and classic YouTube thumbnails */
+.yt-study-filter-blurred .ytThumbnailViewModelImage,
+.yt-study-filter-blurred [class*="ytThumbnailViewModelImage"],
+.yt-study-filter-blurred yt-thumbnail-view-model img,
+.yt-study-filter-blurred [class*="yt-thumbnail-view-model"] img,
 .yt-study-filter-blurred img,
 .yt-study-filter-blurred ytd-thumbnail img,
 .yt-study-filter-blurred #thumbnail img,
@@ -27,8 +34,8 @@
 .yt-study-filter-blurred yt-img-shadow img,
 .yt-study-filter-blurred ytd-moving-thumbnail-renderer,
 .yt-study-filter-blurred ytd-reel-item-renderer img {
-  filter: blur(24px) brightness(0.6) !important;
-  transform: scale(1.08); /* Prevent edge bleed */
+  filter: blur(28px) brightness(0.6) !important;
+  transform: scale(1.08) !important; /* Prevent white edge bleed */
   transition: filter 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s ease !important;
 }
 

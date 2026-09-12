@@ -102,7 +102,9 @@
       // Locate thumbnail container
       let thumbContainer = window.YTStudyFilter.youtube.findThumbnailContainer(cardElement);
       if (!thumbContainer) {
-        thumbContainer = cardElement.querySelector('ytd-thumbnail, #thumbnail, a#thumbnail, .ytd-thumbnail') || cardElement;
+        thumbContainer = cardElement.querySelector(
+          'yt-thumbnail-view-model, [class*="yt-thumbnail-view-model"], [class*="yt-lockup-view-model-wiz__image"], ytd-thumbnail, #thumbnail, a#thumbnail, .ytd-thumbnail'
+        ) || cardElement;
       }
 
       // Ensure container has relative positioning so overlay covers it cleanly

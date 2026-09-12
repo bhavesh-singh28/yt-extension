@@ -30,7 +30,7 @@ router.get('/health', (req, res) => {
 router.post('/classify', async (req, res, next) => {
   try {
     const { valid, error, sanitized } = validateClassifyRequest(req.body);
-
+    console.log(req.body, "----------------------------------------------------------------")
     if (!valid) {
       return res.status(400).json({ error });
     }
@@ -48,6 +48,7 @@ router.post('/classify', async (req, res, next) => {
  */
 router.post('/classify-batch', async (req, res, next) => {
   try {
+    console.log(req.body, "----------------------------------------------------------------");
     const { valid, error, sanitized } = validateBatchClassifyRequest(req.body);
 
     if (!valid) {
