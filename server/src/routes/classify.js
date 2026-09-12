@@ -24,6 +24,21 @@ router.get('/health', (req, res) => {
 });
 
 /**
+ * GET /api/logs
+ * Returns classifications.txt content
+ */
+router.get('/logs', async (req, res) => {
+  try {
+    const { LOG_FILE_PATH } = await import('../utils/fileLogger.js');
+    const fs = await import('node:fs/promises');
+    const content = await fs.readFile(LOG_FILE_PATH, 'utf8').catch(() => 'No classifications logged yet.\n');
+    res.type('text/plain').send(content);
+  } catch (err) {
+    res.status(500).send(`Error reading logs: ${err.message}`);
+  }
+});
+
+/**
  * POST /api/classify
  * Classifies a single YouTube video title
  */

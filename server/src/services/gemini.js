@@ -4,6 +4,7 @@
  */
 
 import { normalizeIsEducational } from '../utils/validation.js';
+import { logClassificationToFile, logBatchClassificationsToFile } from '../utils/fileLogger.js';
 
 const SYSTEM_INSTRUCTION = `You are a binary filter for YouTube study mode.
 Determine if each video title is EDUCATIONAL (true) or NON-EDUCATIONAL (false).
@@ -123,10 +124,13 @@ Return JSON:
     const isEducational = normalizeIsEducational(parsed.isEducational);
 
     console.log(`[Gemini] [${videoId}] "${title}" -> isEducational: ${isEducational} ${isEducational ? '🎓 KEEP' : '🔒 BLUR'}`);
+    logClassificationToFile(videoId, title, isEducational);
     return { videoId, isEducational };
   } catch (err) {
     console.error(`[Gemini] Error classifying [${videoId}]:`, err.message);
-    return { videoId, isEducational: mockClassifier(title) };
+    const isEducational = mockClassifier(title);
+    logClassificationToFile(videoId, title, isEducational);
+    return { videoId, isEducational };
   }
 }
 
@@ -138,10 +142,16 @@ export async function classifyBatchTitles(videos) {
   const model = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').trim();
 
   if (!apiKey || apiKey === 'your_gemini_api_key_here') {
-    return videos.map(v => ({
+    const results = videos.map(v => ({
       videoId: v.videoId,
       isEducational: mockClassifier(v.title)
     }));
+    logBatchClassificationsToFile(videos.map((v, i) => ({
+      videoId: v.videoId,
+      title: v.title,
+      isEducational: results[i].isEducational
+    })));
+    return results;
   }
 
   const prompt = `Classify whether each video is educational (true) or non-educational (false):
@@ -171,7 +181,7 @@ Return strict JSON:
     }
 
     console.log(`[Gemini:Batch] 📤 Results (${modelUsed}):`);
-    return videos.map(v => {
+    const results = videos.map(v => {
       const isEducational = resultMap.has(v.videoId) ? resultMap.get(v.videoId) : mockClassifier(v.title);
       console.log(`   ${isEducational ? '🎓 KEEP' : '🔒 BLUR'} [${v.videoId}] "${v.title}" -> isEducational: ${isEducational}`);
       return {
@@ -179,11 +189,25 @@ Return strict JSON:
         isEducational
       };
     });
+
+    logBatchClassificationsToFile(videos.map((v, i) => ({
+      videoId: v.videoId,
+      title: v.title,
+      isEducational: results[i].isEducational
+    })));
+
+    return results;
   } catch (err) {
     console.error('[Gemini:Batch] Error:', err.message);
-    return videos.map(v => ({
+    const results = videos.map(v => ({
       videoId: v.videoId,
       isEducational: mockClassifier(v.title)
     }));
+    logBatchClassificationsToFile(videos.map((v, i) => ({
+      videoId: v.videoId,
+      title: v.title,
+      isEducational: results[i].isEducational
+    })));
+    return results;
   }
 }
