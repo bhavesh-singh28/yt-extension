@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Study Filter",
+  "version": "1.0.0",
+  "description": "Distraction-free YouTube study mode. Automatically detects and blurs non-educational content using Gemini AI.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "YouTube Study Filter",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "http://localhost:3000/*",
+    "http://127.0.0.1:3000/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*"
+      ],
+      "css": [
+        "styles/filter.css"
+      ],
+      "js": [
+        "content/config.js",
+        "content/cache.js",
+        "content/classifier.js",
+        "content/youtube.js",
+        "content/dom.js",
+        "content/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

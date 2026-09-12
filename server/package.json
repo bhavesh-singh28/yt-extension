@@ -1,0 +1,25 @@
+{
+  "name": "youtube-study-filter-server",
+  "version": "1.0.0",
+  "description": "Backend service for YouTube Study Filter Chrome Extension using Gemini API",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node test/test-api.js"
+  },
+  "keywords": [
+    "youtube",
+    "study-filter",
+    "chrome-extension",
+    "gemini-api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}
