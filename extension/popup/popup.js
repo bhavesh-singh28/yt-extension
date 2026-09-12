@@ -51,6 +51,12 @@ async function loadState() {
       currentSettings = { ...DEFAULT_SETTINGS, ...data[STORAGE_KEYS.SETTINGS] };
     }
 
+    // If still pointing to localhost:3000, migrate to active Lambda Function URL
+    if (!currentSettings.backendUrl || currentSettings.backendUrl === 'http://localhost:3000') {
+      currentSettings.backendUrl = DEFAULT_SETTINGS.backendUrl;
+      saveSettings();
+    }
+
     // Populate toggles
     toggleEnabled.checked = currentSettings.enabled;
     toggleBlur.checked = currentSettings.blurEnabled;
@@ -62,7 +68,7 @@ async function loadState() {
     }
 
     if (inputBackendUrl) {
-      inputBackendUrl.value = currentSettings.backendUrl || 'http://localhost:3000';
+      inputBackendUrl.value = currentSettings.backendUrl;
     }
 
     // Populate statistics
@@ -102,19 +108,52 @@ async function saveSettings() {
  * Check backend connection status and Gemini configuration
  */
 async function checkBackendHealth(url) {
-  statusDot.className = 'status-dot';
-  statusText.textContent = 'Connecting to backend...';
+  if (!url) return;
+  const cleanUrl = url.replace(/\/+$/, '');
 
+  statusDot.className = 'status-dot';
+  statusText.textContent = 'Checking connection...';
+
+  // Strategy 1: Check via Background Service Worker (bypasses CSP & origin restrictions)
   try {
-    const res = await fetch(`${url.replace(/\/+$/, '')}/api/health`, {
-      signal: AbortSignal.timeout(2500)
+    const swResponse = await new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        { action: 'CHECK_HEALTH', backendUrl: cleanUrl },
+        (res) => {
+          if (chrome.runtime.lastError) {
+            resolve({ success: false, error: chrome.runtime.lastError.message });
+          } else {
+            resolve(res || { success: false, error: 'No response from worker' });
+          }
+        }
+      );
+    });
+
+    if (swResponse && swResponse.success && swResponse.data) {
+      const info = swResponse.data;
+      statusDot.className = 'status-dot online';
+      if (info.geminiConfigured) {
+        statusText.textContent = `Online • Gemini Active (${info.model || 'Gemini'})`;
+      } else {
+        statusText.textContent = `Online • Dev Mock Mode`;
+      }
+      return;
+    }
+  } catch (swErr) {
+    console.warn('[Popup] Service worker health check failed, falling back to direct fetch:', swErr);
+  }
+
+  // Strategy 2: Direct Fetch from Popup Page
+  try {
+    const res = await fetch(`${cleanUrl}/api/health`, {
+      signal: AbortSignal.timeout(8000)
     });
 
     if (res.ok) {
       const info = await res.json();
       statusDot.className = 'status-dot online';
       if (info.geminiConfigured) {
-        statusText.textContent = `Online • Gemini Active (${info.model})`;
+        statusText.textContent = `Online • Gemini Active (${info.model || 'Gemini'})`;
       } else {
         statusText.textContent = `Online • Dev Mock Mode`;
       }
@@ -122,8 +161,9 @@ async function checkBackendHealth(url) {
       throw new Error(`HTTP ${res.status}`);
     }
   } catch (err) {
+    console.error('[Popup] Health check failed for:', cleanUrl, err);
     statusDot.className = 'status-dot offline';
-    statusText.textContent = 'Backend offline (http://localhost:3000)';
+    statusText.textContent = `Backend offline (${err.message || 'Connection failed'})`;
   }
 }
 

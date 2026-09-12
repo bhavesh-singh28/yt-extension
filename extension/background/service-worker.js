@@ -91,7 +91,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (action === 'CHECK_HEALTH') {
     (async () => {
       try {
-        const res = await fetch(`${baseUrl}/api/health`, { signal: AbortSignal.timeout(3000) });
+        const res = await fetch(`${baseUrl}/api/health`, { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
         const data = await res.json();
         sendResponse({ success: true, data });
       } catch (err) {
