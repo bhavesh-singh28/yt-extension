@@ -85,7 +85,7 @@
       strictness: 'balanced', // 'relaxed' | 'balanced' | 'strict'
       blurEnabled: true,
       revealEnabled: true,
-      backendUrl: 'http://localhost:3000',
+      backendUrl: 'https://y4hyu4hzjip5u4srfd44ajqtha0apzcc.lambda-url.ap-south-1.on.aws',
       localClassifierEnabled: true,
       cacheTtlMs: 7 * 24 * 60 * 60 * 1000 // 7 days
     },

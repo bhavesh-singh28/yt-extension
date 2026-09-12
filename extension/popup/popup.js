@@ -13,7 +13,7 @@ const DEFAULT_SETTINGS = {
   strictness: 'balanced',
   blurEnabled: true,
   revealEnabled: true,
-  backendUrl: 'http://localhost:3000'
+  backendUrl: 'https://y4hyu4hzjip5u4srfd44ajqtha0apzcc.lambda-url.ap-south-1.on.aws'
 };
 
 // UI Elements

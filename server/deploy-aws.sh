@@ -144,6 +144,14 @@ aws lambda add-permission \
     --function-url-auth-type "NONE" \
     --region "$REGION" 2> /dev/null || true
 
+# Grant public access to invoke Lambda execution
+aws lambda add-permission \
+    --function-name "$FUNCTION_NAME" \
+    --statement-id "AllowPublicInvokeFunction" \
+    --action "lambda:InvokeFunction" \
+    --principal "*" \
+    --region "$REGION" 2> /dev/null || true
+
 FUNCTION_URL=$(echo "$URL_CONFIG" | grep -o '"FunctionUrl": "[^"]*' | cut -d'"' -f4)
 
 # Clean up local zip
