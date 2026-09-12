@@ -8,7 +8,7 @@ set -e
 
 # Configuration
 FUNCTION_NAME="${AWS_LAMBDA_FUNCTION_NAME:-youtube-study-filter}"
-REGION="${AWS_REGION:-us-east-1}"
+REGION="${AWS_REGION:-ap-south-1}"
 ROLE_NAME="${FUNCTION_NAME}-role"
 MODEL="${GEMINI_MODEL:-gemini-3.5-flash-lite}"
 
