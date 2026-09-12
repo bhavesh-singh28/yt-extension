@@ -123,9 +123,9 @@
       'color: #8b5cf6; font-weight: bold;'
     );
 
-    // Call backend batch endpoint
+    // Call classifier batch method with full engine settings
     const results = await classifier.classifyBatch(
-      currentSettings.backendUrl,
+      currentSettings,
       itemsToClassify
     );
 

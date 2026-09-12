@@ -82,10 +82,12 @@
     // Default configuration
     DEFAULT_SETTINGS: {
       enabled: true,
+      aiEngine: 'nano', // 'nano' (Chrome Built-in) | 'direct' (Gemini BYOK)
+      geminiApiKey: '',
+      geminiModel: 'gemini-2.5-flash',
       strictness: 'balanced', // 'relaxed' | 'balanced' | 'strict'
       blurEnabled: true,
       revealEnabled: true,
-      backendUrl: 'https://y4hyu4hzjip5u4srfd44ajqtha0apzcc.lambda-url.ap-south-1.on.aws',
       localClassifierEnabled: true,
       cacheTtlMs: 7 * 24 * 60 * 60 * 1000 // 7 days
     },

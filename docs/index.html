@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Study Filter — Focus on Learning with Gemini AI</title>
+  <meta name="description" content="A distraction-free YouTube study environment powered by Google Gemini AI. Automatically blurs non-educational videos using on-device Gemini Nano or direct Gemini API.">
+  <link rel="icon" type="image/png" href="icons/icon-48.png">
+  
+  <!-- Modern Typography: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient Glow Backgrounds -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="#" class="nav-brand">
+        <img src="icons/icon-48.png" alt="YouTube Study Filter Logo" class="brand-logo" width="32" height="32">
+        <span class="brand-text">YouTube <span class="brand-gradient">Study Filter</span></span>
+      </a>
+
+      <div class="nav-links">
+        <a href="#about" class="nav-link">About</a>
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#setup-guide" class="nav-link">Setup & API Key</a>
+        <a href="#privacy" class="nav-link">Privacy Policy</a>
+      </div>
+
+      <div class="nav-actions">
+        <a href="https://github.com/bhavesh-singh28/yt-extension" target="_blank" class="btn btn-secondary btn-sm" id="btn-github-nav">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Hero Section -->
+    <header class="hero-section" id="hero">
+      <div class="container hero-container">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span>Manifest V3 • 100% Serverless & Private</span>
+        </div>
+
+        <h1 class="hero-title">
+          Transform YouTube into your <br>
+          <span class="gradient-text">Focused Study Space</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Eliminate distractions effortlessly. Using Google Gemini AI, YouTube Study Filter analyzes video titles in real time to automatically blur entertainment, clickbait, and gaming while keeping your educational feed crystal clear.
+        </p>
+
+        <div class="hero-cta-group">
+          <a href="#setup-guide" class="btn btn-primary btn-lg" id="cta-get-started">
+            Get Started Free
+            <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
+              <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+            </svg>
+          </a>
+          <a href="#interactive-demo" class="btn btn-secondary btn-lg" id="cta-try-demo">
+            Interactive Demo
+          </a>
+        </div>
+
+        <!-- Metric Cards Bar -->
+        <div class="hero-metrics">
+          <div class="metric-item">
+            <span class="metric-number">100%</span>
+            <span class="metric-label">Private & On-Device Option</span>
+          </div>
+          <div class="metric-divider"></div>
+          <div class="metric-item">
+            <span class="metric-number">0ms</span>
+            <span class="metric-label">Cache & Nano Latency</span>
+          </div>
+          <div class="metric-divider"></div>
+          <div class="metric-item">
+            <span class="metric-number">$0</span>
+            <span class="metric-label">Completely Free to Use</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Interactive Filter Simulator -->
+    <section class="section demo-section" id="interactive-demo">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-tag">LIVE SIMULATION</span>
+          <h2 class="section-title">See How It Works in Real Time</h2>
+          <p class="section-desc">Experience how YouTube Study Filter protects your attention while preserving your learning materials.</p>
+        </div>
+
+        <div class="simulator-card">
+          <div class="simulator-header">
+            <div class="sim-brand">
+              <span class="sim-dot sim-red"></span>
+              <span class="sim-dot sim-yellow"></span>
+              <span class="sim-dot sim-green"></span>
+              <span class="sim-title">youtube.com Feed Preview</span>
+            </div>
+            <div class="sim-controls">
+              <span class="sim-status">Study Filter: <strong>Active</strong></span>
+              <button type="button" class="sim-toggle-btn" id="btn-toggle-demo-blur">Toggle Filter</button>
+            </div>
+          </div>
+
+          <div class="simulator-grid" id="sim-cards-container">
+            <!-- Educational Card 1 -->
+            <div class="sim-video-card edu-card">
+              <div class="sim-thumbnail">
+                <div class="sim-thumb-badge">🎓 Educational</div>
+                <div class="sim-thumb-art math-bg">f(x) = ∫ 2x dx</div>
+              </div>
+              <div class="sim-info">
+                <h3 class="sim-video-title">MIT 18.01 Single Variable Calculus — Fall Lecture 1</h3>
+                <span class="sim-meta">MIT OpenCourseWare • 420K views</span>
+              </div>
+            </div>
+
+            <!-- Distraction Card 1 (Blurred) -->
+            <div class="sim-video-card non-edu-card blurred" id="demo-blur-card-1">
+              <div class="sim-thumbnail">
+                <div class="sim-overlay">
+                  <span class="overlay-icon">🔒</span>
+                  <span class="overlay-text">Non-Educational</span>
+                  <button type="button" class="sim-reveal-btn" onclick="revealSimCard(this)">Show</button>
+                </div>
+                <div class="sim-thumb-art gaming-bg">LEVEL 99 BOSS FIGHT!</div>
+              </div>
+              <div class="sim-info">
+                <h3 class="sim-video-title">I Spent 100 Days in Hardcore Minecraft and Almost Lost Everything</h3>
+                <span class="sim-meta">GamerChannel • 2.4M views</span>
+              </div>
+            </div>
+
+            <!-- Educational Card 2 -->
+            <div class="sim-video-card edu-card">
+              <div class="sim-thumbnail">
+                <div class="sim-thumb-badge">🎓 Educational</div>
+                <div class="sim-thumb-art code-bg">&lt;FullStack /&gt;</div>
+              </div>
+              <div class="sim-info">
+                <h3 class="sim-video-title">Full React & TypeScript Course for Beginners (2026 Edition)</h3>
+                <span class="sim-meta">CodeAcademy • 850K views</span>
+              </div>
+            </div>
+
+            <!-- Distraction Card 2 (Blurred) -->
+            <div class="sim-video-card non-edu-card blurred" id="demo-blur-card-2">
+              <div class="sim-thumbnail">
+                <div class="sim-overlay">
+                  <span class="overlay-icon">🔒</span>
+                  <span class="overlay-text">Non-Educational</span>
+                  <button type="button" class="sim-reveal-btn" onclick="revealSimCard(this)">Show</button>
+                </div>
+                <div class="sim-thumb-art prank-bg">YOU WON'T BELIEVE THIS</div>
+              </div>
+              <div class="sim-info">
+                <h3 class="sim-video-title">Prank Calling Celebrity Friends Until They Hang Up! (Gone Wild)</h3>
+                <span class="sim-meta">VlogStars • 5.1M views</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="section" id="about">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-tag">WHY IT MATTERS</span>
+          <h2 class="section-title">Built for Students, Engineers, and Self-Learners</h2>
+          <p class="section-desc">YouTube is one of humanity's greatest learning libraries — but its algorithm is engineered for watch time, not your exams or career growth.</p>
+        </div>
+
+        <div class="grid-3">
+          <div class="feature-card">
+            <div class="feature-icon icon-brain">🧠</div>
+            <h3>Dual AI Engine</h3>
+            <p>Choose between Chrome's built-in <strong>Gemini Nano</strong> for 100% on-device local execution, or connect directly to <strong>Google AI Studio</strong> with your personal API key.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon icon-shield">🛡️</div>
+            <h3>Title-Only Privacy</h3>
+            <p>The extension evaluates public video titles only. It never downloads thumbnails, watches videos, reads cookies, or collects your browsing history.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon icon-bolt">⚡</div>
+            <h3>Zero Latency Cache</h3>
+            <p>Smart dual-layer caching (in-memory + local storage) means videos you've already scanned load instantly without consuming any API calls.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Setup Guide: How to Get Gemini API Key & Nano -->
+    <section class="section guide-section" id="setup-guide">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-tag">SETUP TUTORIAL</span>
+          <h2 class="section-title">Choose Your AI Engine & Get Started</h2>
+          <p class="section-desc">You have full control. Select whether you prefer the local on-device model or the cloud API.</p>
+        </div>
+
+        <!-- Engine Tabs -->
+        <div class="guide-tabs">
+          <button type="button" class="guide-tab-btn active" id="tab-btn-direct" onclick="switchGuideTab('direct')">
+            <span class="tab-icon">⚡</span>
+            <span>Option 1: Direct Gemini API (BYOK)</span>
+            <span class="tab-pill">Recommended</span>
+          </button>
+          <button type="button" class="guide-tab-btn" id="tab-btn-nano" onclick="switchGuideTab('nano')">
+            <span class="tab-icon">🧠</span>
+            <span>Option 2: Chrome Gemini Nano (On-Device)</span>
+            <span class="tab-pill pill-local">100% Offline</span>
+          </button>
+        </div>
+
+        <!-- Guide Panel 1: Direct API Key -->
+        <div class="guide-panel active" id="panel-guide-direct">
+          <div class="steps-timeline">
+            <!-- Step 1 -->
+            <div class="step-card">
+              <div class="step-badge">1</div>
+              <div class="step-content">
+                <h3>Get Your Free Google AI Studio Key</h3>
+                <p>Google provides a generous <strong>100% free tier</strong> for developers and individuals with 15 requests per minute, which is more than enough for everyday study sessions.</p>
+                <div class="step-action">
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+                    Open Google AI Studio ↗
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-card">
+              <div class="step-badge">2</div>
+              <div class="step-content">
+                <h3>Generate Your API Key</h3>
+                <p>Sign in with your Google account, click <strong>"Create API key"</strong>, and select or create any Google Cloud project. Copy the generated key starting with <code>AIzaSy...</code>.</p>
+                <div class="code-box">
+                  <code>AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</code>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step-card">
+              <div class="step-badge">3</div>
+              <div class="step-content">
+                <h3>Paste in Extension & Click Test</h3>
+                <p>Open the YouTube Study Filter popup, select <strong>Direct Gemini API</strong>, paste your key, and click <strong>Test Key</strong>. When the green checkmark appears, you're ready to study!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guide Panel 2: Gemini Nano -->
+        <div class="guide-panel" id="panel-guide-nano">
+          <div class="steps-timeline">
+            <!-- Step 1 -->
+            <div class="step-card">
+              <div class="step-badge">1</div>
+              <div class="step-content">
+                <h3>Enable Chrome Prompt API Flags</h3>
+                <p>Chrome 128+ includes Gemini Nano built-in. Open a new tab and enable these two flags in Chrome:</p>
+                <div class="flag-list">
+                  <div class="flag-item">
+                    <span class="flag-name">chrome://flags/#prompt-api-for-gemini-nano</span>
+                    <span class="flag-state">Set to <strong>Enabled</strong></span>
+                  </div>
+                  <div class="flag-item">
+                    <span class="flag-name">chrome://flags/#optimization-guide-on-device-model</span>
+                    <span class="flag-state">Set to <strong>Enabled BypassPerfRequirement</strong></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-card">
+              <div class="step-badge">2</div>
+              <div class="step-content">
+                <h3>Relaunch Chrome & Verify Component</h3>
+                <p>Click <strong>Relaunch</strong> at the bottom of the flags page. To ensure Chrome finishes downloading the Nano model, check <code>chrome://components</code> and look for <strong>Optimization Guide On Device Model</strong>.</p>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step-card">
+              <div class="step-badge">3</div>
+              <div class="step-content">
+                <h3>Select Gemini Nano in Popup</h3>
+                <p>Click the extension icon and select <strong>Gemini Nano</strong>. The status banner will turn green and say <em>Active • Gemini Nano (On-Device)</em>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Official Privacy Policy -->
+    <section class="section privacy-section" id="privacy">
+      <div class="container">
+        <div class="privacy-box">
+          <div class="privacy-header">
+            <span class="section-tag">COMPLIANCE & TRANSPARENCY</span>
+            <h2>Privacy Policy</h2>
+            <p class="privacy-updated">Effective Date: March 2026</p>
+          </div>
+
+          <div class="privacy-body">
+            <p><strong>YouTube Study Filter</strong> ("we", "the Extension") is dedicated to respecting and preserving your privacy. This policy outlines how information is handled when using our extension.</p>
+
+            <h3>1. Single Purpose & Data Processing</h3>
+            <p>The single purpose of the Extension is to evaluate public YouTube video titles to filter and blur non-educational content during study sessions. The extension operates in title-only mode; video thumbnails, video streams, audio, comments, search history, user accounts, and cookies are never accessed or stored.</p>
+
+            <h3>2. AI Execution Modes</h3>
+            <ul>
+              <li><strong>On-Device Gemini Nano:</strong> Video title strings are sent directly to Chrome's local `window.ai` Prompt API session. All computation runs 100% locally on your computer. Zero data leaves your machine.</li>
+              <li><strong>Direct Gemini API:</strong> If you provide your personal Google AI Studio API key, video titles are sent directly to Google's official Generative Language endpoints (`https://generativelanguage.googleapis.com`) using TLS encryption. No intermediate servers, proxies, or logging servers are used.</li>
+            </ul>
+
+            <h3>3. Local Browser Storage</h3>
+            <p>The Extension uses `chrome.storage.local` strictly on your device to store user preferences (e.g. strictness level, blur toggle, preferred AI engine) and cached classifications. This data remains on your device and is never shared.</p>
+
+            <h3>4. No Tracking & No Third-Party Sales</h3>
+            <p>We do NOT track your browsing across the web, use analytics beacons, sell data to third parties or brokers, or serve advertisements.</p>
+
+            <h3>5. Contact</h3>
+            <p>For questions, support, or bug reports, please submit an issue on our official <a href="https://github.com/bhavesh-singh28/yt-extension/issues" target="_blank" rel="noopener noreferrer">GitHub repository</a>.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-container">
+      <div class="footer-left">
+        <img src="icons/icon-48.png" alt="Logo" width="24" height="24">
+        <span>YouTube Study Filter • Open Source (MIT License)</span>
+      </div>
+      <div class="footer-links">
+        <a href="#hero">Back to top</a>
+        <a href="#setup-guide">API Key Guide</a>
+        <a href="#privacy">Privacy Policy</a>
+        <a href="https://github.com/bhavesh-singh28/yt-extension" target="_blank" rel="noopener noreferrer">GitHub Repo</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

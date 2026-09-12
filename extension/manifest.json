@@ -22,10 +22,7 @@
   ],
   "host_permissions": [
     "*://*.youtube.com/*",
-    "https://*.on.aws/*",
-    "https://*/*",
-    "http://localhost:3000/*",
-    "http://127.0.0.1:3000/*"
+    "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js"

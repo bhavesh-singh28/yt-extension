@@ -1,48 +1,139 @@
-# Chrome Web Store Listing: YouTube Study Filter
+# Chrome Web Store Publishing Guide: YouTube Study Filter
 
-## Metadata
-
-* **Name**: YouTube Study Filter
-* **Short Name**: Study Filter
-* **Version**: 1.0.0
-* **Category**: Productivity / Education
-* **Short Description**: Automatically detects and blurs distracting non-educational YouTube videos using Gemini AI for study sessions.
+This document contains everything needed to publish **YouTube Study Filter** to the Chrome Web Store, including copy-paste listing metadata, permission justifications, privacy disclosures, and packaging instructions.
 
 ---
 
-## Detailed Description
+## 📦 1. How to Package the Extension for Submission
 
+> [!IMPORTANT]
+> The Chrome Web Store requires a ZIP file containing the **contents** of the `extension/` directory, **not** the root repository. `manifest.json` must be at the root of the ZIP file.
+
+Run this terminal command from the project root:
+
+```bash
+cd extension && zip -r ../yt-study-filter-v1.0.0.zip . -x "*.DS_Store"
+```
+
+This creates `yt-study-filter-v1.0.0.zip` ready for upload.
+
+---
+
+## 🚀 2. Chrome Developer Dashboard Steps
+
+1. **Sign in / Register**:
+   - Go to the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole).
+   - Sign in with your Google Account.
+   - Pay the one-time $5 developer registration fee if you haven't already.
+
+2. **Upload Package**:
+   - Click **"Add new item"** (top right).
+   - Drag and drop `yt-study-filter-v1.0.0.zip`.
+
+3. **Fill Out Store Listing Tab** (Copy-paste details from Section 3 below).
+
+4. **Fill Out Privacy Tab** (Copy-paste answers from Section 4 below).
+
+5. **Submit for Review**:
+   - Click **"Submit for review"**. Standard approval typically takes 24 to 72 hours.
+
+---
+
+## 📝 3. Store Listing Tab Details
+
+### Basic Information
+* **Package Name**: YouTube Study Filter
+* **Summary (132 chars max)**:
+  `Distraction-free YouTube study mode. Automatically detects and blurs non-educational videos using Gemini AI.`
+* **Category**: `Productivity` or `Education`
+
+### Detailed Description (Markdown formatting supported)
+```markdown
 Transform YouTube into an effective study and learning environment.
 
-YouTube Study Filter analyzes video titles in real-time using Google Gemini AI to separate educational content from entertainment, gaming, and distractions.
+YouTube Study Filter uses Gemini AI to analyze video titles in real-time, cleanly separating educational tutorials, courses, and academic content from entertainment, gaming, vlogs, and clickbait.
 
-### Key Capabilities:
-- **Intelligent Title Analysis**: Leverages Google Gemini AI to classify educational lectures, programming tutorials, STEM subjects, and academic courses versus entertainment or clickbait.
-- **Distraction-Free Blurring**: Non-educational video cards are neatly blurred with their layout preserved.
-- **Instant Reveal Button**: Need to watch a non-study video? Click "Show" on any blurred card to reveal it for your current session without affecting other videos.
-- **Fast Local Pre-Filter**: Common educational lectures and tutorials are recognized instantly with zero network delay.
-- **Three Strictness Modes**:
-  - Relaxed: Only blurs obvious entertainment and time-wasters.
-  - Balanced: Standard AI classification.
-  - Strict: Blurs borderline and uncertain videos as well.
-- **Privacy First**: Only video titles are analyzed. Video thumbnails, images, personal data, and watch history are NEVER collected or transmitted.
+✨ KEY FEATURES:
+• Dual AI Engine:
+  - 🧠 Chrome Built-in AI (Gemini Nano): 100% on-device local classification. Free, zero network latency, and completely private.
+  - ⚡ Direct Gemini API: Direct client-to-Google calls using your own free Google AI Studio API key. Zero intermediate servers.
+• Title-Only Analysis: Fast and lightweight text classification. Thumbnails, comments, and video files are never downloaded or analyzed.
+• Distraction-Free Blurring: Non-educational video cards are neatly blurred while maintaining YouTube's original grid layout.
+• One-Click Reveal: Need a study break? Click the "Show" button on any blurred card to reveal it for your current session without affecting other videos.
+• Three Strictness Modes:
+  - Relaxed: Only filters obvious entertainment and time-wasters.
+  - Balanced: Standard AI classification for everyday studying.
+  - Strict: Filters borderline and uncertain videos as well.
+• Fast Local Cache: Videos you've already seen are classified instantly from local browser storage.
+• 100% Privacy Focused: No analytics, no account required, and no user tracking.
+
+HOW TO USE:
+1. Click the extension icon in your browser toolbar.
+2. Select your preferred engine (Gemini Nano or Direct Gemini API).
+3. Browse YouTube — distracting videos are blurred automatically, keeping your focus on learning!
+```
+
+### Graphic Assets
+* **Store Icon**: Upload `extension/icons/icon-128.png` (128×128 PNG).
+* **Screenshots**: At least 1 screenshot is required:
+  * Supported resolutions: `1280×800` or `640×400` PNG/JPEG.
+  * Take a screenshot showing YouTube with the blur overlay and the extension popup open.
 
 ---
 
-## Permissions Justification
+## 🔒 4. Privacy Tab Form (Crucial for Fast Approval)
 
-### `storage`
-* **Justification**: Required to save the user's selected strictness setting, toggle preferences (enable/disable blur), local classification cache, and productivity statistics (e.g., number of videos analyzed and filtered) across browsing sessions.
+### Single Purpose Description
+> "A distraction-free YouTube study filter that analyzes public video titles to automatically blur non-educational content."
 
-### `host_permissions`
-* `*://*.youtube.com/*`: Required to detect video titles on YouTube web pages and apply the blur/reveal overlay styling.
-* `http://localhost:3000/*` and `http://127.0.0.1:3000/*`: Required to communicate with the local Gemini AI backend server for title classification.
+### Permissions Justification (Copy-paste directly)
+
+* **`storage`**:
+  > "Required to save user configuration settings (strictness mode, blur toggle, selected AI engine) and store local video classification caches and productivity statistics across browsing sessions."
+
+* **Host Permission: `*://*.youtube.com/*`**:
+  > "Required to read public video titles on YouTube pages and inject CSS styling to blur non-educational video cards."
+
+* **Host Permission: `https://generativelanguage.googleapis.com/*`**:
+  > "Required to send video title text directly to Google Gemini API when the user enables Direct Gemini API mode."
+
+### Data Usage Disclosures
+Check the following checkboxes in the Developer Dashboard:
+* ✅ **No user tracking**: The extension does not collect or transmit personal identifiers, browsing history across websites, or user location.
+* ✅ **Certify Single Purpose**: The developer certifies that data is only processed for the stated single purpose.
+* ✅ **Do not sell user data**: The extension does not sell or transfer user data to third parties.
 
 ---
 
-## Privacy Policy Summary
+## 📄 5. Privacy Policy & Website (Hosted on GitHub Pages)
 
-YouTube Study Filter does NOT collect, sell, or monetize user data.
-* **No Account Required**: The extension functions anonymously without registration.
-* **No Tracking**: No browsing activity outside YouTube is monitored.
-* **No Media Transmission**: Thumbnails, videos, comments, and cookies are never uploaded. Only the public text title and video ID are processed.
+Your GitHub Pages website is created in the `docs/` folder.
+
+### How to Enable GitHub Pages (30 seconds):
+1. Go to your GitHub repository: `https://github.com/bhavesh-singh28/yt-extension`
+2. Click **Settings** (tab at top) → **Pages** (on the left sidebar).
+3. Under **Build and deployment**:
+   * **Source**: `Deploy from a branch`
+   * **Branch**: `main`
+   * **Folder**: `/docs` (select `/docs` instead of `/root`)
+4. Click **Save**.
+
+Within 1-2 minutes, your website is live!
+
+### Links to enter in Chrome Developer Dashboard:
+* **Official Homepage / Support URL**:  
+  `https://bhavesh-singh28.github.io/yt-extension/`
+* **Privacy Policy URL**:  
+  `https://bhavesh-singh28.github.io/yt-extension/#privacy`
+
+---
+
+## 🔑 6. How to Get a Free Gemini API Key (User Guide)
+
+Share this link with users who want to use the Direct Gemini API:
+1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey).
+2. Sign in with any Google account.
+3. Click **"Create API key"** and choose a project.
+4. Copy the key (`AIzaSy...`) and paste it into the extension popup under **Direct Gemini API**.
+5. Click **Test Key** to confirm connectivity.
+
